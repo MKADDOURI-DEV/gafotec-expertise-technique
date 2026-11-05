@@ -3,7 +3,7 @@ import { ArrowUpRight, Clock, Mail, MapPin, Phone } from "lucide-react";
 import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import QuoteForm from "@/components/contact/QuoteForm";
-import { company as companyInfo, serviceOptions, whatsappLink } from "@/data/site";
+import { company as companyInfo, images, serviceOptions, whatsappLink } from "@/data/site";
 import { useCompany, useContent } from "@/components/content/ContentProvider";
 
 export const Route = createFileRoute("/_site/contact")({
