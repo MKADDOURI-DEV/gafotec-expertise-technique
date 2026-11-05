@@ -1,0 +1,56 @@
+{
+  "name": "MediaAsset",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nom du fichier"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "image",
+        "video"
+      ],
+      "enumColors": [
+        "blue",
+        "purple"
+      ],
+      "default": "image"
+    },
+    "url": {
+      "type": "string",
+      "description": "URL publique du fichier"
+    },
+    "alt": {
+      "type": "string",
+      "description": "Texte alternatif (accessibilit\u00e9)"
+    }
+  },
+  "required": [
+    "url",
+    "kind"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

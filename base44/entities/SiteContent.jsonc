@@ -1,0 +1,40 @@
+{
+  "name": "SiteContent",
+  "type": "object",
+  "properties": {
+    "key": {
+      "type": "string",
+      "description": "Cl\u00e9 du champ \u00e9ditable (registre de contenu)"
+    },
+    "value": {
+      "type": "string",
+      "description": "Valeur affich\u00e9e sur le site"
+    }
+  },
+  "required": [
+    "key",
+    "value"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

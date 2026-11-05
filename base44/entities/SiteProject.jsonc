@@ -1,0 +1,105 @@
+{
+  "name": "SiteProject",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Nom du projet"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Identifiant d'URL, sans espace ni accent"
+    },
+    "year": {
+      "type": "number",
+      "description": "Ann\u00e9e de r\u00e9alisation"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "Industrie",
+        "H\u00f4tellerie",
+        "Enseignement",
+        "Tourisme",
+        "R\u00e9sidentiel"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green",
+        "yellow",
+        "gray"
+      ]
+    },
+    "location": {
+      "type": "string",
+      "description": "Ville ou r\u00e9gion"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Livr\u00e9",
+        "En cours"
+      ],
+      "enumColors": [
+        "green",
+        "yellow"
+      ],
+      "default": "Livr\u00e9"
+    },
+    "image": {
+      "type": "string",
+      "description": "URL du visuel principal"
+    },
+    "summary": {
+      "type": "string",
+      "description": "R\u00e9sum\u00e9 court affich\u00e9 sur les cartes"
+    },
+    "description": {
+      "type": "string",
+      "description": "Description d\u00e9taill\u00e9e du projet"
+    },
+    "scope": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Interventions techniques r\u00e9alis\u00e9es"
+    },
+    "featured": {
+      "type": "boolean",
+      "default": false,
+      "description": "Afficher sur la page d'accueil"
+    },
+    "display_order": {
+      "type": "number",
+      "description": "Ordre d'affichage (croissant)"
+    }
+  },
+  "required": [
+    "title",
+    "slug"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
