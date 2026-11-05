@@ -48,12 +48,7 @@ const pillars = [
 function AboutPage() {
   return (
     <>
-      <PageHero
-        eyebrow="À propos"
-        title="Une entreprise technique, ancrée dans le terrain."
-        description="GAFOTEC réunit les compétences nécessaires pour prendre en charge les corps d’état techniques d’un bâtiment, de l’étude à la maintenance."
-        image={images.chantier}
-      />
+      <PageHero contentKey="propos" />
 
       <section className="section">
         <div className="container-page grid gap-12 lg:grid-cols-12 lg:gap-16">

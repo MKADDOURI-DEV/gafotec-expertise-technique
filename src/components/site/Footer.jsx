@@ -1,10 +1,13 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import Logo from "@/components/site/Logo";
-import { company, navLinks, services, whatsappLink } from "@/data/site";
+import { useCompany, useContent } from "@/components/content/ContentProvider";
+import { navLinks, services, whatsappLink } from "@/data/site";
 
 export default function Footer() {
   const year = new Date().getFullYear();
+  const company = useCompany();
+  const { t } = useContent();
 
   return (
     <footer className="relative overflow-hidden bg-brand-deep text-white">
@@ -23,8 +26,7 @@ export default function Footer() {
           <div className="lg:col-span-4">
             <Logo inverted />
             <p className="mt-6 max-w-xs text-sm leading-relaxed text-white/70">
-              Entreprise marocaine de corps d’état techniques : CVC, plomberie, chauffage,
-              protection incendie, désenfumage, piscines et énergie solaire photovoltaïque.
+              {t("footer.description")}
             </p>
             <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.22em] text-white/45">
               Fès · Maroc — 34.03°N / 5.00°O
@@ -106,9 +108,17 @@ export default function Footer() {
 
         <div className="mt-14 flex flex-col gap-3 border-t border-white/15 pt-6 text-[11px] text-white/50 sm:flex-row sm:items-center sm:justify-between">
           <p>
-            © {year} {company.legal}. Tous droits réservés.
+            © {year} {company.legal ?? "GAFOTEC — Corps d’État Techniques"}. Tous droits réservés.
           </p>
-          <p className="font-mono uppercase tracking-[0.16em]">{company.website}</p>
+          <div className="flex items-center gap-5">
+            <p className="font-mono uppercase tracking-[0.16em]">{company.website}</p>
+            <Link
+              to="/admin"
+              className="font-mono uppercase tracking-[0.16em] text-white/40 transition-colors hover:text-white"
+            >
+              Administration
+            </Link>
+          </div>
         </div>
       </div>
     </footer>

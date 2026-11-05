@@ -1,10 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
-import { images } from "@/data/site";
+import { useContent } from "@/components/content/ContentProvider";
 import "@/components/site/hero.css";
-
-const HEADLINE = "L’EXPERTISE TECHNIQUE AU SERVICE DE VOS PROJETS.";
 
 function Letters({ text }) {
   return (
@@ -23,23 +21,22 @@ function Letters({ text }) {
 }
 
 export default function Hero() {
+  const { t } = useContent();
+
   return (
     <section className="gh-section" aria-label="GAFOTEC — Expertise technique">
       <div className="gh-media" aria-hidden="true">
-        <Image src={images.hero} alt="" loading="eager" className="h-full w-full" />
+        <Image src={t("home.hero.image")} alt="" loading="eager" className="h-full w-full" />
       </div>
 
       <div className="gh-content">
-        <p className="gh-eyebrow gh-rise gh-d1">Gafotec · Corps d’État Techniques · Fès</p>
+        <p className="gh-eyebrow gh-rise gh-d1">{t("home.hero.eyebrow")}</p>
 
         <h1 className="gh-title gh-rise gh-d2">
-          <Letters text={HEADLINE} />
+          <Letters text={t("home.hero.title")} />
         </h1>
 
-        <p className="gh-body gh-rise gh-d3">
-          Des solutions techniques performantes et durables dans les domaines du CVC, de la
-          plomberie, de la protection incendie et des énergies renouvelables.
-        </p>
+        <p className="gh-body gh-rise gh-d3">{t("home.hero.subtitle")}</p>
 
         <div className="gh-actions gh-rise gh-d4">
           <Link to="/nos-expertises" className="gh-cta gh-cta--solid">

@@ -46,12 +46,7 @@ function TeamPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Notre équipe"
-        title="Une organisation courte, technique et responsable."
-        description="Chez GAFOTEC, chaque projet est suivi par des interlocuteurs identifiés : direction, bureau d’études, conduite de chantier et fonctions support."
-        image={images.euromed}
-      />
+      <PageHero contentKey="equipe" />
 
       <section className="section">
         <div className="container-page">

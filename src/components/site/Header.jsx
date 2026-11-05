@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Menu, Phone, X } from "lucide-react";
 import Logo from "@/components/site/Logo";
-import { company, navLinks } from "@/data/site";
+import { useCompany } from "@/components/content/ContentProvider";
+import { navLinks } from "@/data/site";
 import { cn } from "@/lib/utils";
 
 export default function Header() {
+  const company = useCompany();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);

@@ -3,7 +3,8 @@ import { ArrowUpRight, Clock, Mail, MapPin, Phone } from "lucide-react";
 import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import QuoteForm from "@/components/contact/QuoteForm";
-import { company, images, serviceOptions, whatsappLink } from "@/data/site";
+import { company as companyInfo, serviceOptions, whatsappLink } from "@/data/site";
+import { useCompany, useContent } from "@/components/content/ContentProvider";
 
 export const Route = createFileRoute("/_site/contact")({
   validateSearch: (search) => ({
@@ -33,15 +34,12 @@ export const Route = createFileRoute("/_site/contact")({
 function ContactPage() {
   const { service } = Route.useSearch();
   const defaultService = serviceOptions.includes(service) ? service : "";
+  const company = useCompany();
+  const { t } = useContent();
 
   return (
     <>
-      <PageHero
-        eyebrow="Contact"
-        title="Parlons de votre projet."
-        description="Un devis, une consultation technique ou une question sur une installation existante : nos équipes vous répondent."
-        image={images.chantier}
-      />
+      <PageHero contentKey="contact" />
 
       <section className="section">
         <div className="container-page grid gap-12 lg:grid-cols-12 lg:gap-16">
@@ -63,7 +61,7 @@ function ContactPage() {
                   </dd>
                   <dd>
                     <a
-                      href={company.mapsLink}
+                      href={companyInfo.mapsLink}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="mt-2 inline-flex items-center gap-1.5 font-mono text-[9.5px] uppercase tracking-[0.16em] text-primary hover:text-brand-deep"
@@ -118,9 +116,9 @@ function ContactPage() {
                     Horaires
                   </dt>
                   <dd className="mt-2 text-[13.5px] leading-relaxed text-foreground">
-                    Du lundi au vendredi, 8h30 – 18h00
+                    {company.hours}
                     <span className="mt-1 block text-[12px] text-muted-foreground">
-                      Samedi matin sur rendez-vous
+                      {company.hoursNote}
                     </span>
                   </dd>
                 </div>
@@ -180,7 +178,7 @@ function ContactPage() {
               <div className="aspect-[16/9] w-full overflow-hidden border border-border bg-surface">
                 <iframe
                   title="Localisation de GAFOTEC à Fès"
-                  src={company.mapsEmbed}
+                  src={companyInfo.mapsEmbed}
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"
                   className="h-full w-full border-0"

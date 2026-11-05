@@ -2,17 +2,20 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { ArrowLeft, ArrowRight, ArrowUpRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import Reveal from "@/components/site/Reveal";
-import { projects } from "@/data/site";
+import { getProjects } from "@/lib/content-fns";
 
 export const Route = createFileRoute("/_site/nos-realisations/$slug")({
-  loader: ({ params }) => {
-    const project = projects.find((item) => item.slug === params.slug);
-    if (!project) throw notFound();
+  loader: async ({ params }) => {
+    const projects = await getProjects();
     const index = projects.findIndex((item) => item.slug === params.slug);
-    return { project, next: projects[(index + 1) % projects.length] };
+    if (index === -1) throw notFound();
+    return {
+      project: projects[index],
+      next: projects[(index + 1) % projects.length] ?? projects[0],
+    };
   },
-  head: ({ params }) => {
-    const project = projects.find((item) => item.slug === params.slug);
+  head: ({ loaderData }) => {
+    const project = loaderData?.project;
     if (!project) return { meta: [{ title: "Réalisation introuvable — GAFOTEC" }] };
     return {
       meta: [

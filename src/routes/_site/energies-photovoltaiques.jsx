@@ -79,12 +79,7 @@ function SolarPage() {
 
   return (
     <>
-      <PageHero
-        eyebrow="Énergies photovoltaïques"
-        title="Accélérer la transition énergétique."
-        description="Études de faisabilité, dimensionnement, conception, installation et maintenance de vos centrales solaires photovoltaïques."
-        image={images.solaireChamp}
-      />
+      <PageHero contentKey="photovoltaique" />
 
       <section className="section">
         <div className="container-page grid items-center gap-12 lg:grid-cols-12 lg:gap-16">

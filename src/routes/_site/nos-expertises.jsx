@@ -33,12 +33,7 @@ export const Route = createFileRoute("/_site/nos-expertises")({
 function ExpertisePage() {
   return (
     <>
-      <PageHero
-        eyebrow="Nos expertises"
-        title="Les métiers techniques que nous maîtrisons."
-        description="Chaque activité est prise en charge de l’étude à la maintenance, avec le même niveau d’exigence sur le dimensionnement, la mise en œuvre et la réception."
-        image={images.cvc}
-      />
+      <PageHero contentKey="expertises" />
 
       <div className="border-b border-border bg-background">
         <div className="container-page flex gap-1 overflow-x-auto py-4">

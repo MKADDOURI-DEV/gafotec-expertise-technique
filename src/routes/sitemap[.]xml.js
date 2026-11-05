@@ -12,32 +12,23 @@ const PAGES = [
   { path: "/contact", priority: "0.8", changefreq: "yearly" },
 ];
 
-const PROJECTS = [
-  "laboratoire-jorf-lasfar",
-  "usines-espaces-de-vie-salles-de-controle",
-  "hilton-casablanca-sidi-maarouf",
-  "institut-specialise-hotellerie-tourisme",
-  "marina-tanger",
-  "institut-superieur-etudes-maritimes",
-  "ecole-nationale-architecture-agadir",
-  "universite-euromed-fes",
-  "hotel-et-residences-en-cours",
-];
-
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ context }) => {
         const today = new Date().toISOString().slice(0, 10);
+        const projects = await context.getBase44().asServiceRole.entities.SiteProject.filter({});
         const urls = [
           ...PAGES.map(
             (page) =>
               `  <url><loc>${BASE}${page.path}</loc><lastmod>${today}</lastmod><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`,
           ),
-          ...PROJECTS.map(
-            (slug) =>
-              `  <url><loc>${BASE}/nos-realisations/${slug}</loc><lastmod>${today}</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>`,
-          ),
+          ...projects
+            .filter((project) => project.slug)
+            .map(
+              (project) =>
+                `  <url><loc>${BASE}/nos-realisations/${project.slug}</loc><lastmod>${today}</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>`,
+            ),
         ];
 
         const xml = `<?xml version="1.0" encoding="UTF-8"?>

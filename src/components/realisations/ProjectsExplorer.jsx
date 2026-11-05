@@ -2,16 +2,16 @@ import { useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
-import { projects, projectCategories } from "@/data/site";
+import { projectCategories } from "@/data/site";
 import { cn } from "@/lib/utils";
 
-export default function ProjectsExplorer() {
+export default function ProjectsExplorer({ projects = [] }) {
   const [category, setCategory] = useState("Tous");
   const [year, setYear] = useState("Tous");
 
   const years = useMemo(
     () => Array.from(new Set(projects.map((p) => p.year))).sort((a, b) => a - b),
-    [],
+    [projects],
   );
 
   const filtered = projects.filter(

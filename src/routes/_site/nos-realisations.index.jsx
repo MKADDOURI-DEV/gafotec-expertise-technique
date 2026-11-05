@@ -4,8 +4,10 @@ import Reveal from "@/components/site/Reveal";
 import ProjectsExplorer from "@/components/realisations/ProjectsExplorer";
 import ContactCTA from "@/components/home/ContactCTA";
 import { images } from "@/data/site";
+import { getProjects } from "@/lib/content-fns";
 
 export const Route = createFileRoute("/_site/nos-realisations/")({
+  loader: () => getProjects(),
   head: () => ({
     meta: [
       { title: "Nos réalisations — Références techniques GAFOTEC au Maroc" },
@@ -29,14 +31,10 @@ export const Route = createFileRoute("/_site/nos-realisations/")({
 });
 
 function ProjectsPage() {
+  const projects = Route.useLoaderData();
   return (
     <>
-      <PageHero
-        eyebrow="Nos réalisations"
-        title="Des références qui parlent d’elles-mêmes."
-        description="Laboratoires industriels, hôtels, instituts et universités : nos installations équipent des bâtiments exigeants, partout au Maroc."
-        image={images.hilton}
-      />
+      <PageHero contentKey="realisations" />
 
       <section className="section">
         <div className="container-page">
@@ -58,7 +56,7 @@ function ProjectsPage() {
           </Reveal>
 
           <div className="mt-10">
-            <ProjectsExplorer />
+            <ProjectsExplorer projects={projects} />
           </div>
         </div>
       </section>

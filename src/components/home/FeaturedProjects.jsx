@@ -2,14 +2,17 @@ import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import Reveal from "@/components/site/Reveal";
-import { projects } from "@/data/site";
 
-const featured = ["hilton-casablanca-sidi-maarouf", "marina-tanger", "universite-euromed-fes"];
+const FALLBACK_SLUGS = ["hilton-casablanca-sidi-maarouf", "marina-tanger", "universite-euromed-fes"];
 
-export default function FeaturedProjects() {
-  const list = featured
-    .map((slug) => projects.find((p) => p.slug === slug))
-    .filter(Boolean);
+export default function FeaturedProjects({ projects = [] }) {
+  const flagged = projects.filter((project) => project.featured);
+  const list = (
+    flagged.length > 0
+      ? flagged
+      : FALLBACK_SLUGS.map((slug) => projects.find((project) => project.slug === slug)).filter(Boolean)
+  ).slice(0, 3);
+  const ongoing = projects.find((project) => project.status === "En cours");
 
   return (
     <section className="section bg-background" aria-labelledby="realisations-title">
@@ -75,26 +78,28 @@ export default function FeaturedProjects() {
           ))}
         </div>
 
-        <Reveal className="mt-10">
-          <Link
-            to="/nos-realisations/$slug"
-            params={{ slug: "hotel-et-residences-en-cours" }}
-            className="group flex flex-col items-start gap-4 border border-border p-6 transition-colors hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div className="flex items-center gap-4">
-              <span className="border border-primary/30 px-2.5 py-1 font-mono text-[9.5px] uppercase tracking-[0.18em] text-primary">
-                En cours
+        {ongoing && (
+          <Reveal className="mt-10">
+            <Link
+              to="/nos-realisations/$slug"
+              params={{ slug: ongoing.slug }}
+              className="group flex flex-col items-start gap-4 border border-border p-6 transition-colors hover:border-primary/40 sm:flex-row sm:items-center sm:justify-between"
+            >
+              <div className="flex items-center gap-4">
+                <span className="border border-primary/30 px-2.5 py-1 font-mono text-[9.5px] uppercase tracking-[0.18em] text-primary">
+                  En cours
+                </span>
+                <p className="font-heading text-[15px] font-semibold tracking-tight text-foreground">
+                  {ongoing.title}
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
+                Voir le projet
+                <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
               </span>
-              <p className="font-heading text-[15px] font-semibold tracking-tight text-foreground">
-                Construction d’un hôtel et de résidences immobilières adossées
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.18em] text-primary">
-              Voir le projet
-              <ArrowUpRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={1.75} />
-            </span>
-          </Link>
-        </Reveal>
+            </Link>
+          </Reveal>
+        )}
       </div>
     </section>
   );

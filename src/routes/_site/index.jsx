@@ -7,8 +7,10 @@ import Approach from "@/components/home/Approach";
 import Values from "@/components/home/Values";
 import ContactCTA from "@/components/home/ContactCTA";
 import { company, images } from "@/data/site";
+import { getProjects } from "@/lib/content-fns";
 
 export const Route = createFileRoute("/_site/")({
+  loader: () => getProjects(),
   head: () => ({
     meta: [
       { title: "GAFOTEC — L’expertise technique au service de vos projets | Fès, Maroc" },
@@ -57,12 +59,13 @@ export const Route = createFileRoute("/_site/")({
 });
 
 function HomePage() {
+  const projects = Route.useLoaderData();
   return (
     <>
       <Hero />
       <HomeIntro />
       <ExpertiseGrid />
-      <FeaturedProjects />
+      <FeaturedProjects projects={projects} />
       <Approach />
       <Values />
       <ContactCTA />
