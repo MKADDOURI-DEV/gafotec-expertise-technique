@@ -1,0 +1,92 @@
+{
+  "name": "ContactRequest",
+  "type": "object",
+  "properties": {
+    "full_name": {
+      "type": "string",
+      "description": "Nom complet du demandeur"
+    },
+    "company": {
+      "type": "string",
+      "description": "Soci\u00e9t\u00e9 du demandeur"
+    },
+    "email": {
+      "type": "string",
+      "description": "Adresse e-mail de contact"
+    },
+    "phone": {
+      "type": "string",
+      "description": "T\u00e9l\u00e9phone"
+    },
+    "service": {
+      "type": "string",
+      "description": "M\u00e9tier concern\u00e9 par la demande",
+      "enum": [
+        "Climatisation & Ventilation",
+        "Plomberie sanitaire",
+        "Chauffage central",
+        "Protection contre l\u2019incendie",
+        "D\u00e9senfumage",
+        "Piscines",
+        "\u00c9nergie solaire photovolta\u00efque",
+        "Autre / Plusieurs m\u00e9tiers"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "pink",
+        "red",
+        "yellow",
+        "green",
+        "gray",
+        "gray"
+      ]
+    },
+    "message": {
+      "type": "string",
+      "description": "Description du projet"
+    },
+    "status": {
+      "type": "string",
+      "description": "Suivi interne de la demande",
+      "enum": [
+        "nouveau",
+        "traite"
+      ],
+      "enumColors": [
+        "yellow",
+        "green"
+      ],
+      "default": "nouveau"
+    }
+  },
+  "required": [
+    "full_name",
+    "email",
+    "phone",
+    "service",
+    "message"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

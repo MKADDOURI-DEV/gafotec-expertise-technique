@@ -46,6 +46,14 @@ export default {
   			border: 'hsl(var(--border))',
   			input: 'hsl(var(--input))',
   			ring: 'hsl(var(--ring))',
+  			brand: {
+  				deep: 'hsl(var(--brand-deep))',
+  				corporate: 'hsl(var(--brand-corporate))',
+  				medium: 'hsl(var(--brand-medium))',
+  				light: 'hsl(var(--brand-light))',
+  			},
+  			surface: 'hsl(var(--surface))',
+  			ink: 'hsl(var(--ink))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
   				'2': 'hsl(var(--chart-2))',

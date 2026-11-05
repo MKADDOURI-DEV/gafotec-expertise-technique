@@ -1,0 +1,204 @@
+/* GAFOTEC hero — full-bleed architectural scene, bottom-anchored content,
+   sequenced fade-up on load, CSS only (respects reduced motion). */
+
+.gh-section {
+  --gh-text: #ffffff;
+  --gh-shadow: 0 2px 30px rgba(4, 20, 44, 0.35);
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100svh;
+  overflow: hidden;
+  background: hsl(var(--brand-deep));
+  padding: 0 clamp(20px, 5vw, 48px) clamp(56px, 9vh, 104px);
+}
+
+.gh-section *,
+.gh-section *::before,
+.gh-section *::after {
+  box-sizing: border-box;
+}
+
+/* background image layer */
+.gh-media {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  overflow: hidden;
+}
+
+.gh-media > span {
+  display: block !important;
+  width: 100%;
+  height: 100%;
+}
+
+.gh-media img {
+  transform: scale(1.06);
+  transform-origin: center;
+  animation: gh-drift 32s ease-in-out infinite;
+  will-change: transform;
+}
+
+.gh-media::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(4, 18, 40, 0.62) 0%, rgba(4, 20, 44, 0.28) 34%, rgba(4, 18, 40, 0.86) 100%),
+    linear-gradient(90deg, rgba(6, 40, 90, 0.42) 0%, rgba(6, 40, 90, 0) 55%);
+}
+
+@keyframes gh-drift {
+  0% { transform: scale(1.06) translate(0, 0); }
+  25% { transform: scale(1.09) translate(-1.4%, -0.9%); }
+  50% { transform: scale(1.06) translate(1.1%, 0.6%); }
+  75% { transform: scale(1.09) translate(-0.5%, 1%); }
+  100% { transform: scale(1.06) translate(0, 0); }
+}
+
+.gh-content {
+  position: relative;
+  width: 100%;
+  max-width: 1120px;
+  margin-inline: auto;
+  padding-bottom: clamp(8px, 2vh, 28px);
+  text-align: center;
+  color: var(--gh-text);
+}
+
+.gh-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin: 0 auto clamp(18px, 2.4vh, 28px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.gh-eyebrow::before,
+.gh-eyebrow::after {
+  content: "";
+  display: block;
+  width: clamp(24px, 5vw, 56px);
+  height: 1px;
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.gh-title {
+  margin: 0;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: clamp(1.85rem, min(5.3vw, 9.2svh), 4.55rem);
+  line-height: 0.96;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+  text-wrap: balance;
+  text-shadow: var(--gh-shadow);
+}
+
+.gh-ltr {
+  display: inline-block;
+  transition: color 0.25s ease, text-shadow 0.25s ease, transform 0.25s ease;
+}
+
+.gh-ltr:hover {
+  color: hsl(var(--brand-light));
+  text-shadow: 0 0 26px rgba(198, 223, 239, 0.6);
+}
+
+.gh-body {
+  margin: clamp(16px, 2.2vh, 24px) auto 0;
+  max-width: 34rem;
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 1.15vw, 1.0625rem);
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.gh-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: clamp(26px, 3.6vh, 40px);
+}
+
+.gh-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 28px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.gh-cta--solid {
+  background: #ffffff;
+  color: hsl(var(--brand-deep));
+  border: 1px solid #ffffff;
+}
+
+.gh-cta--solid:hover,
+.gh-cta--solid:focus-visible {
+  background: hsl(var(--brand-light));
+  border-color: hsl(var(--brand-light));
+}
+
+.gh-cta--ghost {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+}
+
+.gh-cta--ghost:hover,
+.gh-cta--ghost:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: #ffffff;
+}
+
+/* entrance */
+@keyframes gh-rise {
+  from { opacity: 0; transform: translateY(1.1rem); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.gh-rise {
+  animation: gh-rise 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.gh-d1 { animation-delay: 0.05s; }
+.gh-d2 { animation-delay: 0.18s; }
+.gh-d3 { animation-delay: 0.3s; }
+.gh-d4 { animation-delay: 0.42s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gh-rise { animation: none; }
+  .gh-media img { animation: none; transform: scale(1.03); }
+}
+
+/* mobile: keep the block clear of taller browser bars */
+@media (max-width: 640px) {
+  .gh-section { padding-bottom: clamp(40px, 7vh, 64px); }
+  .gh-title { font-size: clamp(1.6rem, 7.6vw, 2.4rem); }
+  .gh-actions { flex-direction: column; align-items: stretch; }
+  .gh-cta { width: 100%; }
+}
