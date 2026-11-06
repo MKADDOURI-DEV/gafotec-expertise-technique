@@ -15,6 +15,7 @@ begin
   insert into public.profiles (id, email) values (new.id, new.email);
   return new;
 end; $$;
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
 create trigger on_auth_user_created after insert on auth.users
   for each row execute function public.handle_new_user();
 
@@ -25,7 +26,7 @@ $$;
 revoke execute on function public.is_admin() from public, anon;
 grant execute on function public.is_admin() to authenticated;
 
-create function public.touch_updated_at() returns trigger language plpgsql as $$
+create function public.touch_updated_at() returns trigger language plpgsql set search_path = '' as $$
 begin new.updated_at = now(); return new; end; $$;
 
 create table public.site_content (
@@ -101,26 +102,32 @@ alter table public.media_assets enable row level security;
 alter table public.contact_requests enable row level security;
 
 -- Profiles: a user reads only their own row; nobody edits roles through the API (service role only).
+revoke insert, update, delete on public.profiles from anon, authenticated;
 create policy "profiles: read own" on public.profiles for select to authenticated using (id = auth.uid());
 
 -- Public site data: world-readable, admin-write.
 create policy "site_content: public read" on public.site_content for select to anon, authenticated using (true);
-create policy "site_content: admin write" on public.site_content for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "site_content: admin write" on public.site_content for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 create policy "site_projects: public read" on public.site_projects for select to anon, authenticated using (true);
-create policy "site_projects: admin write" on public.site_projects for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "site_projects: admin write" on public.site_projects for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 create policy "team_members: public read" on public.team_members for select to anon, authenticated using (true);
-create policy "team_members: admin write" on public.team_members for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "team_members: admin write" on public.team_members for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 
 -- Admin-only (same as Base44): the public quote form writes through a server function (service role, validated by zod).
-create policy "media_assets: admin all" on public.media_assets for all to authenticated using (public.is_admin()) with check (public.is_admin());
-create policy "contact_requests: admin all" on public.contact_requests for all to authenticated using (public.is_admin()) with check (public.is_admin());
+create policy "media_assets: admin all" on public.media_assets for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+create policy "contact_requests: admin all" on public.contact_requests for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
 
 -- Storage: public bucket for site media; only admins can upload/change/delete.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('media', 'media', true, 52428800,
-  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml', 'video/mp4', 'video/webm'])
+  array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
 on conflict (id) do nothing;
 
-create policy "media: admin insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and public.is_admin());
-create policy "media: admin update" on storage.objects for update to authenticated using (bucket_id = 'media' and public.is_admin());
-create policy "media: admin delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and public.is_admin());
+create policy "media: admin insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and (select public.is_admin()));
+create policy "media: admin update" on storage.objects for update to authenticated using (bucket_id = 'media' and (select public.is_admin()));
+create policy "media: admin delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and (select public.is_admin()));
+
+-- Indexes for the ordered public lists and the admin inbox.
+create index site_projects_order_idx on public.site_projects (display_order, year);
+create index team_members_order_idx on public.team_members (display_order);
+create index contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
