@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FolderKanban, Images, LayoutDashboard, Type } from "lucide-react";
+import { FolderKanban, Images, KeyRound, LayoutDashboard, Type } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -7,6 +7,7 @@ const links = [
   { to: "/admin/contenu", label: "Contenu du site", icon: Type },
   { to: "/admin/realisations", label: "Réalisations", icon: FolderKanban },
   { to: "/admin/medias", label: "Médiathèque", icon: Images },
+  { to: "/admin/compte", label: "Mon compte", icon: KeyRound },
 ];
 
 export default function AdminNav() {

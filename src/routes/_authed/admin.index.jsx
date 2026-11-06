@@ -33,6 +33,11 @@ export default function AdminHome() {
       title: "Téléverser des médias",
       text: "Images et vidéos du site, réutilisables dans tous les contenus.",
     },
+    {
+      to: "/admin/compte",
+      title: "Mon compte",
+      text: "Vos informations de connexion et la modification du mot de passe.",
+    },
   ];
 
   return (
@@ -70,7 +75,7 @@ export default function AdminHome() {
         </p>
       )}
 
-      <div className="mt-8 grid gap-4 sm:grid-cols-3">
+      <div className="mt-8 grid gap-4 sm:grid-cols-2">
         {actions.map((action) => (
           <Link
             key={action.to}
