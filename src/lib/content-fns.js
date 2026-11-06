@@ -107,6 +107,46 @@ export const deleteProject = createServerFn({ method: "POST" })
     return { ok: true };
   });
 
+/* --------------------------------------------------------------------- team */
+
+const TEAM_GROUPS = ["Direction", "Études", "Chantier", "Support"];
+
+/** Public: the team as displayed on « Notre équipe », already ordered. */
+export const getTeam = createServerFn({ method: "GET" }).handler(async ({ context }) => {
+  const rows = await context.getBase44().asServiceRole.entities.TeamMember.filter({});
+  return [...rows].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
+});
+
+export const saveTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(
+    z.object({
+      id: z.string().optional(),
+      name: z.string().trim().min(2).max(120),
+      role: z.string().trim().min(2).max(160),
+      group: z.enum(TEAM_GROUPS),
+      display_order: z.coerce.number().int().min(0).max(999).optional(),
+    }),
+  )
+  .handler(async ({ data, context }) => {
+    assertAdmin(context);
+    const db = context.getBase44().asServiceRole;
+    const { id, ...values } = data;
+    const record = id
+      ? await db.entities.TeamMember.update(id, values)
+      : await db.entities.TeamMember.create(values);
+    return { ok: true, id: record.id };
+  });
+
+export const deleteTeamMember = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id: z.string() }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context);
+    await context.getBase44().asServiceRole.entities.TeamMember.delete(data.id);
+    return { ok: true };
+  });
+
 /* -------------------------------------------------------------------- media */
 
 export const listMedia = createServerFn({ method: "GET" })

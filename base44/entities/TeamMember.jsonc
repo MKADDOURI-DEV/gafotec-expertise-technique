@@ -1,0 +1,62 @@
+{
+  "name": "TeamMember",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Nom et pr\u00e9nom du collaborateur"
+    },
+    "role": {
+      "type": "string",
+      "description": "Fonction dans l'entreprise"
+    },
+    "group": {
+      "type": "string",
+      "enum": [
+        "Direction",
+        "\u00c9tudes",
+        "Chantier",
+        "Support"
+      ],
+      "enumColors": [
+        "blue",
+        "purple",
+        "green",
+        "gray"
+      ],
+      "default": "\u00c9tudes",
+      "description": "P\u00f4le d'affectation affich\u00e9 sur la page \u00e9quipe"
+    },
+    "display_order": {
+      "type": "number",
+      "description": "Ordre d'affichage (croissant)"
+    }
+  },
+  "required": [
+    "name",
+    "role",
+    "group"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

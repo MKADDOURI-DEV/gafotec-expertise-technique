@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import ContactCTA from "@/components/home/ContactCTA";
-import { images, team } from "@/data/site";
+import { images } from "@/data/site";
+import { getTeam } from "@/lib/content-fns";
 
 export const Route = createFileRoute("/_site/notre-equipe")({
   head: () => ({
@@ -23,6 +24,7 @@ export const Route = createFileRoute("/_site/notre-equipe")({
     ],
     links: [{ rel: "canonical", href: "/notre-equipe" }],
   }),
+  loader: () => getTeam(),
   component: TeamPage,
 });
 
@@ -42,6 +44,7 @@ function initials(name) {
 }
 
 function TeamPage() {
+  const team = Route.useLoaderData();
   const manager = team.find((member) => member.group === "Direction");
 
   return (
@@ -50,16 +53,18 @@ function TeamPage() {
 
       <section className="section">
         <div className="container-page">
-          <Reveal className="mx-auto max-w-md">
-            <div className="border border-border bg-brand-deep p-7 text-center text-white">
-              <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/55">
-                Direction
-              </p>
-              <p className="mt-4 font-heading text-xl font-bold tracking-tight">{manager.name}</p>
-              <p className="mt-1.5 text-[12.5px] text-white/70">{manager.role}</p>
-            </div>
-            <div className="mx-auto h-10 w-px bg-border" />
-          </Reveal>
+          {manager && (
+            <Reveal className="mx-auto max-w-md">
+              <div className="border border-border bg-brand-deep p-7 text-center text-white">
+                <p className="font-mono text-[9.5px] uppercase tracking-[0.22em] text-white/55">
+                  Direction
+                </p>
+                <p className="mt-4 font-heading text-xl font-bold tracking-tight">{manager.name}</p>
+                <p className="mt-1.5 text-[12.5px] text-white/70">{manager.role}</p>
+              </div>
+              <div className="mx-auto h-10 w-px bg-border" />
+            </Reveal>
+          )}
 
           <div className="grid gap-6 md:grid-cols-3">
             {groups.map((group, gi) => {
@@ -77,7 +82,7 @@ function TeamPage() {
                     </div>
                     <ul className="flex flex-1 flex-col divide-y divide-border">
                       {members.map((member) => (
-                        <li key={member.name} className="flex items-center gap-3.5 px-5 py-4">
+                        <li key={member.id ?? member.name} className="flex items-center gap-3.5 px-5 py-4">
                           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/25 font-mono text-[10px] text-primary">
                             {initials(member.name)}
                           </span>

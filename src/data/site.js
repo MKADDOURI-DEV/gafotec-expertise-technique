@@ -445,14 +445,4 @@ export const values = [
   },
 ];
 
-export const team = [
-  { name: "GAOUZI ABDELHAK", role: "Gérant", group: "Direction" },
-  { name: "BARHRMI YOUSSEF", role: "Chargé d’études techniques et chiffrage", group: "Études" },
-  { name: "MERINI MOHAMMED", role: "Chef projet", group: "Études" },
-  { name: "BARHRMI IBRAHIM", role: "Dessinateur technique", group: "Études" },
-  { name: "KAITA ABDENNACER", role: "Chef chantier", group: "Chantier" },
-  { name: "FAIZ AMINA", role: "Service comptabilité", group: "Support" },
-  { name: "FAIZ ZINEB", role: "Service d’achat", group: "Support" },
-];
-
 export const serviceOptions = services.map((s) => s.title).concat(["Autre / Plusieurs métiers"]);

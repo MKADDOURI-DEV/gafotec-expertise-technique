@@ -29,6 +29,11 @@ export default function AdminHome() {
       text: "Ajouter un chantier, mettre à jour son périmètre ou son visuel.",
     },
     {
+      to: "/admin/equipe",
+      title: "Gérer l’équipe",
+      text: "Ajouter, modifier ou retirer les collaborateurs affichés sur le site.",
+    },
+    {
       to: "/admin/medias",
       title: "Téléverser des médias",
       text: "Images et vidéos du site, réutilisables dans tous les contenus.",
