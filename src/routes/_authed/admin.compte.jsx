@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Lock, Mail, ShieldCheck } from "lucide-react";
 import PasswordForm from "@/components/admin/PasswordForm";
+import EmailChangeCard from "@/components/admin/EmailChangeCard";
 import { useAuth } from "@/lib/AuthContext";
 
 export const Route = createFileRoute("/_authed/admin/compte")({
@@ -39,7 +40,7 @@ function AccountAdmin() {
         Mon compte
       </h1>
       <p className="mt-3 max-w-2xl text-[14px] leading-relaxed text-muted-foreground">
-        Informations de connexion du compte administrateur et modification du mot de passe.
+        Informations de connexion du compte administrateur, mot de passe et adresse e-mail.
       </p>
 
       <dl className="mt-8 grid gap-px border border-border bg-border sm:grid-cols-2">
@@ -63,14 +64,13 @@ function AccountAdmin() {
         <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" strokeWidth={1.75} />
         <span>
           Le mot de passe est chiffré par la plateforme : il ne peut être ni affiché ni consulté, y
-          compris par l’administrateur. L’adresse e-mail du compte ne peut pas non plus être
-          modifiée ; pour utiliser une autre adresse, créez un nouveau compte puis donnez-lui le rôle
-          administrateur.
+          compris par l’administrateur. Il peut en revanche être remplacé à tout moment ci-dessous.
         </span>
       </p>
 
-      <div className="mt-8">
+      <div className="mt-8 grid gap-5">
         <PasswordForm userId={user.id} />
+        <EmailChangeCard currentEmail={user.email} role={user.role} />
       </div>
     </div>
   );
