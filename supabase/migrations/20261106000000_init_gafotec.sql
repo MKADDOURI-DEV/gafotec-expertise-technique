@@ -1,33 +1,19 @@
--- GAFOTEC: schema migrated from Base44 entities. Review only; applied once the Supabase project exists.
+-- GAFOTEC: Base44 -> Supabase schema.
+-- Access model: all site/admin data is read and written ONLY through server functions that use the
+-- service role (same as Base44, where every entity was admin-only). The browser (anon/authenticated)
+-- gets no table access except reading its own profile row. Admins also manage files in the `media` bucket.
+-- Totals (verified by script): 6 tables, 5 RLS policies (1 on tables + 4 on storage.objects), 3 functions, 1 bucket.
 
--- Profiles: one row per auth user; `role` replaces the Base44 User.role field.
+-- ---------------------------------------------------------------- tables
+
+-- One row per auth user; replaces Base44's built-in User (role, full_name, created_date).
 create table public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
+  full_name text,
   role text not null default 'user' check (role in ('admin', 'user')),
   created_at timestamptz not null default now()
 );
-
--- Every new auth user gets a profile with role 'user'. Only the service role can promote to 'admin'.
-create function public.handle_new_user() returns trigger
-language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.profiles (id, email) values (new.id, new.email);
-  return new;
-end; $$;
-revoke execute on function public.handle_new_user() from public, anon, authenticated;
-create trigger on_auth_user_created after insert on auth.users
-  for each row execute function public.handle_new_user();
-
-create function public.is_admin() returns boolean
-language sql stable security definer set search_path = public as $$
-  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
-$$;
-revoke execute on function public.is_admin() from public, anon;
-grant execute on function public.is_admin() to authenticated;
-
-create function public.touch_updated_at() returns trigger language plpgsql set search_path = '' as $$
-begin new.updated_at = now(); return new; end; $$;
 
 create table public.site_content (
   id uuid primary key default gen_random_uuid(),
@@ -89,11 +75,52 @@ create table public.contact_requests (
   created_at timestamptz not null default now()
 );
 
+create index site_projects_order_idx on public.site_projects (display_order, year);
+create index team_members_order_idx on public.team_members (display_order);
+create index contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
+
+-- ---------------------------------------------------------------- functions
+
+-- New auth user -> profile with role 'user'. Only the service role can promote someone to 'admin'.
+create function public.handle_new_user() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, email, full_name)
+  values (new.id, new.email, new.raw_user_meta_data ->> 'full_name')
+  on conflict (id) do nothing;
+  return new;
+end; $$;
+
+create function public.is_admin() returns boolean
+language sql stable security definer set search_path = public as $$
+  select exists (select 1 from public.profiles where id = auth.uid() and role = 'admin');
+$$;
+
+create function public.touch_updated_at() returns trigger
+language plpgsql set search_path = '' as $$
+begin new.updated_at = now(); return new; end; $$;
+
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.touch_updated_at() from public, anon, authenticated;
+revoke execute on function public.is_admin() from public, anon;
+grant execute on function public.is_admin() to authenticated;
+
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute function public.handle_new_user();
 create trigger touch_site_content before update on public.site_content for each row execute function public.touch_updated_at();
 create trigger touch_site_projects before update on public.site_projects for each row execute function public.touch_updated_at();
 create trigger touch_team_members before update on public.team_members for each row execute function public.touch_updated_at();
 
--- RLS everywhere.
+-- ---------------------------------------------------------------- table privileges (least privilege)
+
+revoke all on table public.profiles, public.site_content, public.site_projects,
+  public.team_members, public.media_assets, public.contact_requests from anon, authenticated;
+grant select on table public.profiles to authenticated;
+grant all on table public.profiles, public.site_content, public.site_projects,
+  public.team_members, public.media_assets, public.contact_requests to service_role;
+
+-- ---------------------------------------------------------------- RLS
+
 alter table public.profiles enable row level security;
 alter table public.site_content enable row level security;
 alter table public.site_projects enable row level security;
@@ -101,33 +128,25 @@ alter table public.team_members enable row level security;
 alter table public.media_assets enable row level security;
 alter table public.contact_requests enable row level security;
 
--- Profiles: a user reads only their own row; nobody edits roles through the API (service role only).
-revoke insert, update, delete on public.profiles from anon, authenticated;
+-- The only table policy: a signed-in user reads their own profile (role/name). The other five tables have
+-- no policy on purpose (deny-all for API roles); the service role bypasses RLS.
 create policy "profiles: read own" on public.profiles for select to authenticated using (id = auth.uid());
 
--- Public site data: world-readable, admin-write.
-create policy "site_content: public read" on public.site_content for select to anon, authenticated using (true);
-create policy "site_content: admin write" on public.site_content for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
-create policy "site_projects: public read" on public.site_projects for select to anon, authenticated using (true);
-create policy "site_projects: admin write" on public.site_projects for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
-create policy "team_members: public read" on public.team_members for select to anon, authenticated using (true);
-create policy "team_members: admin write" on public.team_members for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
+-- ---------------------------------------------------------------- storage
 
--- Admin-only (same as Base44): the public quote form writes through a server function (service role, validated by zod).
-create policy "media_assets: admin all" on public.media_assets for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
-create policy "contact_requests: admin all" on public.contact_requests for all to authenticated using ((select public.is_admin())) with check ((select public.is_admin()));
-
--- Storage: public bucket for site media; only admins can upload/change/delete.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values ('media', 'media', true, 52428800,
   array['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'video/mp4', 'video/webm'])
 on conflict (id) do nothing;
 
-create policy "media: admin insert" on storage.objects for insert to authenticated with check (bucket_id = 'media' and (select public.is_admin()));
-create policy "media: admin update" on storage.objects for update to authenticated using (bucket_id = 'media' and (select public.is_admin()));
-create policy "media: admin delete" on storage.objects for delete to authenticated using (bucket_id = 'media' and (select public.is_admin()));
-
--- Indexes for the ordered public lists and the admin inbox.
-create index site_projects_order_idx on public.site_projects (display_order, year);
-create index team_members_order_idx on public.team_members (display_order);
-create index contact_requests_status_created_idx on public.contact_requests (status, created_at desc);
+-- Public bucket: files are readable by URL. Listing and every write are admin-only.
+-- select = list/download-by-API and the prerequisite for upsert, move, copy and delete.
+create policy "media: admin select" on storage.objects for select to authenticated
+  using (bucket_id = 'media' and (select public.is_admin()));
+create policy "media: admin insert" on storage.objects for insert to authenticated
+  with check (bucket_id = 'media' and (select public.is_admin()));
+create policy "media: admin update" on storage.objects for update to authenticated
+  using (bucket_id = 'media' and (select public.is_admin()))
+  with check (bucket_id = 'media' and (select public.is_admin()));
+create policy "media: admin delete" on storage.objects for delete to authenticated
+  using (bucket_id = 'media' and (select public.is_admin()));
