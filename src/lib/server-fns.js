@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { writeQuote } from "@/lib/data-api";
+import { getAdminDb } from "@/lib/supabase-admin";
 
 export const getServerInfo = createServerFn({ method: "GET" }).handler(async () => ({
   renderedAt: new Date().toISOString(),
@@ -26,20 +28,19 @@ const quoteSchema = z.object({
 /**
  * Public quotation request. Deliberately open (no sign-in): input is bounded by
  * the schema above and the record is written with the service role, so the
- * entity itself stays readable by the company's admins only.
+ * table itself stays readable by the company's admins only.
  */
 export const submitQuoteRequest = createServerFn({ method: "POST" })
   .validator(quoteSchema)
-  .handler(async ({ data, context }) => {
-    const record = await context.getBase44().asServiceRole.entities.ContactRequest.create({
+  .handler(async ({ data }) => {
+    const reference = await writeQuote(await getAdminDb(), {
       full_name: data.full_name,
       company: data.company ?? "",
       email: data.email,
       phone: data.phone,
       service: data.service,
       message: data.message,
-      status: "nouveau",
     });
 
-    return { ok: true, reference: record.id };
+    return { ok: true, reference };
   });

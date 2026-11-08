@@ -1,4 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { readProjectSlugs } from "@/lib/data-api";
+import { getAdminDb } from "@/lib/supabase-admin";
 
 const BASE = "https://www.gafotec.com";
 
@@ -15,20 +17,18 @@ const PAGES = [
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
-      GET: async ({ context }) => {
+      GET: async () => {
         const today = new Date().toISOString().slice(0, 10);
-        const projects = await context.getBase44().asServiceRole.entities.SiteProject.filter({});
+        const slugs = await readProjectSlugs(await getAdminDb());
         const urls = [
           ...PAGES.map(
             (page) =>
               `  <url><loc>${BASE}${page.path}</loc><lastmod>${today}</lastmod><changefreq>${page.changefreq}</changefreq><priority>${page.priority}</priority></url>`,
           ),
-          ...projects
-            .filter((project) => project.slug)
-            .map(
-              (project) =>
-                `  <url><loc>${BASE}/nos-realisations/${project.slug}</loc><lastmod>${today}</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>`,
-            ),
+          ...slugs.map(
+            (slug) =>
+              `  <url><loc>${BASE}/nos-realisations/${slug}</loc><lastmod>${today}</lastmod><changefreq>yearly</changefreq><priority>0.6</priority></url>`,
+          ),
         ];
 
         const xml = `<?xml version="1.0" encoding="UTF-8"?>

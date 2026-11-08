@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Image } from "@/components/ui/image";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { base44 } from "@/api/base44Client";
+import { uploadPublicFile } from "@/lib/storage";
 import { createMedia, listMedia } from "@/lib/content-fns";
 
 /** Image picker for a content field: choose from the media library or upload a new file. */
@@ -34,7 +34,7 @@ export default function MediaField({ value, onChange }) {
     if (!file) return;
     setUploading(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+      const { file_url } = await uploadPublicFile(file);
       await create({
         data: {
           title: file.name,

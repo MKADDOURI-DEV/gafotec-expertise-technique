@@ -5,7 +5,7 @@ import { Copy, Loader2, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Image } from "@/components/ui/image";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import { uploadPublicFile } from "@/lib/storage";
 import { createMedia, deleteMedia, listMedia } from "@/lib/content-fns";
 
 export const Route = createFileRoute("/_authed/admin/medias")({
@@ -28,7 +28,7 @@ function MediaAdmin() {
     setUploading(true);
     try {
       for (const file of list) {
-        const { file_url } = await base44.integrations.Core.UploadPublicFile({ file });
+        const { file_url } = await uploadPublicFile(file);
         await create({
           data: {
             title: file.name,

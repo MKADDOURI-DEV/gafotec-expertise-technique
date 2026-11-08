@@ -23,6 +23,9 @@ export async function requireSignedIn({ context, location }) {
   // boundary, whose "Try again" asks the server again (a failed query caches nothing).
   const { user, error } = await context.queryClient.ensureQueryData(authQuery);
   if (user) return { user };
+  if (error?.type === "mfa_required") {
+    throw redirect({ to: "/mfa", search: { returnTo: location.href }, reloadDocument: true });
+  }
   // Thrown rather than returned so the children's loaders never run without a user.
   if (error?.type === "user_not_registered") throw new NotRegisteredError(error.message);
   // A document navigation on purpose: an app served behind the platform login gets the

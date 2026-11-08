@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Loader2, MailCheck } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { useServerFn } from "@tanstack/react-start";
+import { inviteUser } from "@/lib/user-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { Label } from "@/components/ui/label";
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
 export default function EmailChangeCard({ currentEmail, role }) {
+  const invite = useServerFn(inviteUser);
   const [newEmail, setNewEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sentTo, setSentTo] = useState("");
@@ -30,7 +32,7 @@ export default function EmailChangeCard({ currentEmail, role }) {
 
     setSending(true);
     try {
-      await base44.users.inviteUser(email, role === "admin" ? "admin" : "user");
+      await invite({ data: { email, role: role === "admin" ? "admin" : "user" } });
       setSentTo(email);
       setNewEmail("");
       toast.success("Invitation envoyée");

@@ -1,51 +1,36 @@
-import { base44 } from "@/api/base44Client";
-import { getAppParams } from "@/lib/app-params";
+import { getSupabase } from "@/lib/supabase";
 
-const appId = () => getAppParams().appId;
+export const googleLoginEnabled = () => import.meta.env.VITE_ENABLE_GOOGLE_LOGIN === "true";
 
-function authPath(suffix) {
-  if (!/^[a-f0-9]{24}$/i.test(appId())) throw new Error("Invalid app ID");
-  return `/api/apps/${appId()}/auth/${suffix}`;
-}
+const MESSAGES = {
+  invalid_credentials: "Invalid email or password",
+  email_not_confirmed: "Please confirm your email address first",
+  over_request_rate_limit: "Too many attempts. Please try again later.",
+};
 
-async function post(suffix, body, token) {
-  const response = await fetch(authPath(suffix), {
-    method: "POST",
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-    body: JSON.stringify(body),
-  });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error?.message || result.detail || "Unable to sign in");
-  return result;
-}
+export const authMessage = (error, fallback) => MESSAGES[error?.code] ?? error?.message ?? fallback;
 
+// Password sign-in. An account with a verified authenticator app still owes its second step (aal2).
 export async function loginWithMfa(email, password) {
-  const result = await post("login", { email, password });
-  if (result.access_token) base44.auth.setToken(result.access_token);
-  return result;
+  const supabase = getSupabase();
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw new Error(authMessage(error, "Invalid email or password"));
+  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  return aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2" ? { mfa_required: true } : { mfa_required: false };
 }
 
-export async function continueMfa(result, returnTo) {
-  const encode = (bytes) => btoa(String.fromCharCode(...bytes)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-  const verifier = encode(crypto.getRandomValues(new Uint8Array(32)));
-  const challenge = encode(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(verifier))));
-  const { code } = await post("mfa/handoff", { code_challenge: challenge }, result.mfa_session_token);
-  sessionStorage.setItem(`app-mfa-pkce:${appId()}`, verifier);
-  const url = new URL("/auth/mfa", window.location.origin);
-  url.search = new URLSearchParams({ app_id: appId(), mfa_code: code, from_url: returnTo });
-  window.location.assign(url.href);
+// Second step: our own /mfa page (TOTP), then back to where the visitor was going.
+export async function continueMfa(_result, returnTo) {
+  window.location.assign(`/mfa?returnTo=${encodeURIComponent(returnTo || "/")}`);
 }
 
-// provider: "google" | "microsoft" | "facebook" | "apple"
+// provider: "google". Needs the Google provider enabled in Supabase and VITE_ENABLE_GOOGLE_LOGIN=true.
 export async function loginWithSocial(provider, returnTo) {
-  const response = await fetch(`/api/apps/public/login-info/by-id/${appId()}`);
-  if (!response.ok) throw new Error("Unable to load sign-in options");
-  const info = await response.json();
-  if (info.auth_config?.mfa_policy !== "required") return base44.auth.loginWithProvider(provider, returnTo);
-  const url = new URL("/auth/mfa", window.location.origin);
-  url.search = new URLSearchParams({ app_id: appId(), oauth_start: provider, from_url: returnTo });
-  window.location.assign(url.href);
+  const { error } = await getSupabase().auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: new URL(returnTo || "/", window.location.origin).href },
+  });
+  if (error) throw new Error(authMessage(error, "Unable to sign in"));
 }
 
 export function loginWithGoogle(returnTo) {

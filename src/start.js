@@ -1,10 +1,7 @@
 import { createStart } from "@tanstack/react-start";
-import { authMiddleware, base44RequestMiddleware } from "@/lib/auth-middleware";
-import { errorCaptureFunctionMiddleware, errorCaptureRequestMiddleware } from "@/lib/error-capture";
+import { authMiddleware } from "@/lib/auth-middleware";
 
-// Every server function and server route gets `context.getBase44()`, acting as the visitor.
-// Error capture goes first, so it sees what the other middlewares and the handlers throw.
+// authMiddleware sends the visitor's Supabase access token with every server-function call.
 export const startInstance = createStart(() => ({
-  requestMiddleware: [errorCaptureRequestMiddleware, base44RequestMiddleware],
-  functionMiddleware: [errorCaptureFunctionMiddleware, authMiddleware],
+  functionMiddleware: [authMiddleware],
 }));
