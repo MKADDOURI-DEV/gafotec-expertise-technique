@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { cloudflare } from "@cloudflare/vite-plugin";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import react from "@vitejs/plugin-react";
+import { nitro } from "nitro/vite";
 import { defineConfig } from "vite";
 
 // Every runtime dependency is bundled at startup, for the browser and the SSR worker: one first imported
@@ -21,9 +21,9 @@ export default defineConfig({
     },
   },
   plugins: [
-    // No inspector: a restarted dev server would race the old one for port 9229 and crash.
-    cloudflare({ viteEnvironment: { name: "ssr" }, inspectorPort: false }),
     tanstackStart({ srcDirectory: "src" }),
+    // Server runtime: Nitro picks the Vercel preset by itself on Vercel (VERCEL=1); `node-server` elsewhere.
+    nitro(),
     react(),
   ],
 });

@@ -23,7 +23,7 @@ async function run(query) {
   return { data, count };
 }
 
-// Row -> the shape the UI already uses (it was written against Base44: created_date, `group`).
+// Row -> the shape the UI already uses (created_date, `group`).
 export const toProject = (row) => ({
   ...row,
   scope: Array.isArray(row.scope) ? row.scope : [],
@@ -98,6 +98,18 @@ export async function readMedia(db) {
 export async function writeMedia(db, values) {
   const { data } = await run(db.from("media_assets").insert(values).select("id").single());
   return data.id;
+}
+
+export const toRequest = (row) => ({ ...row, created_date: row.created_at });
+
+export async function readRequests(db) {
+  const { data } = await run(db.from("contact_requests").select("*").order("created_at", { ascending: false }));
+  return data.map(toRequest);
+}
+
+export async function writeRequestStatus(db, id, status) {
+  const { data } = await run(db.from("contact_requests").update({ status }).eq("id", id).select("id"));
+  if (!data.length) throw notFound();
 }
 
 export async function readOverview(db) {

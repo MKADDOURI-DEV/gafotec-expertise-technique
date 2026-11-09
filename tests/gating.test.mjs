@@ -13,7 +13,7 @@ function serverFns(path) {
 }
 const all = ["lib/content-fns.js", "lib/server-fns.js", "lib/user-fns.js"].flatMap(serverFns);
 
-test("found the server functions", () => assert.ok(all.length >= 14, `only ${all.length} found`));
+test("found the server functions", () => assert.ok(all.length >= 17, `only ${all.length} found`));
 
 for (const fn of all) {
   if (PUBLIC.has(fn.name)) {

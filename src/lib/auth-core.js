@@ -76,3 +76,14 @@ export async function resolveUser(token, db) {
 export function assertAdmin(user) {
   if (user?.role !== "admin") throw forbidden();
 }
+
+/** TanStack wraps a failed validator into an Error whose message is the JSON list of issues. */
+export function isValidationError(error) {
+  if (Array.isArray(error?.issues)) return true;
+  try {
+    const parsed = JSON.parse(error?.message ?? "");
+    return Array.isArray(parsed) && parsed.length > 0 && parsed.every((issue) => issue && typeof issue === "object" && "path" in issue && "message" in issue);
+  } catch {
+    return false;
+  }
+}

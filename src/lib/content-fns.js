@@ -9,10 +9,12 @@ import {
   readMedia,
   readOverview,
   readProjects,
+  readRequests,
   readTeam,
   writeContent,
   writeMedia,
   writeProject,
+  writeRequestStatus,
   writeTeamMember,
 } from "@/lib/data-api";
 import { getAdminDb } from "@/lib/supabase-admin";
@@ -144,6 +146,33 @@ export const deleteMedia = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     assertAdmin(context.user);
     await deleteRow(await getAdminDb(), "media_assets", data.id);
+    return { ok: true };
+  });
+
+// ---- Quote requests (the contact form) -------------------------------------------------------------------------
+
+export const listContactRequests = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    assertAdmin(context.user);
+    return readRequests(await getAdminDb());
+  });
+
+export const setContactRequestStatus = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id, status: z.enum(["nouveau", "traite"]) }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    await writeRequestStatus(await getAdminDb(), data.id, data.status);
+    return { ok: true };
+  });
+
+export const deleteContactRequest = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    await deleteRow(await getAdminDb(), "contact_requests", data.id);
     return { ok: true };
   });
 

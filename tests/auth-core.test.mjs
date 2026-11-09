@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { HttpError, assertAdmin, bearerToken, jwtClaims, resolveUser } from "../src/lib/auth-core.js";
+import { HttpError, assertAdmin, bearerToken, isValidationError, jwtClaims, resolveUser } from "../src/lib/auth-core.js";
 
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString("base64url");
 const jwt = (claims = {}) => `${b64({ alg: "HS256" })}.${b64({ sub: "u1", ...claims })}.sig`;
@@ -69,4 +69,11 @@ test("assertAdmin: 403 for everyone but admins", () => {
   for (const user of [{ role: "user" }, {}, null, undefined, { role: "ADMIN" }]) {
     assert.throws(() => assertAdmin(user), (e) => e instanceof HttpError && e.status === 403 && e.code === "FORBIDDEN");
   }
+});
+
+test("isValidationError recognises TanStack's wrapped validator errors only", () => {
+  const issues = JSON.stringify([{ origin: "string", code: "invalid_format", path: ["slug"], message: "Invalid" }]);
+  assert.equal(isValidationError(new Error(issues)), true);
+  assert.equal(isValidationError({ issues: [{}] }), true);
+  for (const other of [new Error("Erreur serveur"), new Error("[1,2]"), new Error("[]"), null, {}]) assert.equal(isValidationError(other), false);
 });

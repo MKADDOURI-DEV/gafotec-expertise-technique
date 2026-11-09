@@ -100,7 +100,7 @@ export function resumeMfa() {
   return resumed;
 }
 
-// Sign-in options shown by the MFA screens (replaces the Base44 login-info endpoint).
+// Sign-in options shown by the MFA screens.
 export async function loadSignInOptions() {
   return {
     name: "GAFOTEC",

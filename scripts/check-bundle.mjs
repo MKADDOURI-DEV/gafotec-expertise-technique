@@ -1,8 +1,13 @@
 // Fails if anything secret-looking, or any Base44 runtime, ended up in the browser bundle (run after `npm run build`).
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
-const root = new URL("../dist/client", import.meta.url).pathname;
+const candidates = [".vercel/output/static", ".output/public"].map((dir) => new URL(`../${dir}`, import.meta.url).pathname);
+const root = candidates.find((dir) => existsSync(dir));
+if (!root) {
+  console.error("FAIL: no build output found (run `npm run build` first)");
+  process.exit(1);
+}
 const forbidden = ["SUPABASE_SERVICE_ROLE_KEY", "sb_secret_", "asServiceRole", "@base44", "base44_access_token", "createClientFromRequest"];
 const secret = process.env.SUPABASE_SERVICE_ROLE_KEY; // when set, its exact value must be absent too
 
@@ -19,8 +24,8 @@ const hits = [];
 for (const file of files(root)) {
   scanned += 1;
   const text = readFileSync(file, "utf8");
-  for (const needle of forbidden) if (text.includes(needle)) hits.push(`${needle} in ${file.replace(root, "dist/client")}`);
-  if (secret && text.includes(secret)) hits.push(`service-role key VALUE in ${file.replace(root, "dist/client")}`);
+  for (const needle of forbidden) if (text.includes(needle)) hits.push(`${needle} in ${file.replace(root, "client")}`);
+  if (secret && text.includes(secret)) hits.push(`service-role key VALUE in ${file.replace(root, "client")}`);
   // Any JWT whose payload says role=service_role
   for (const match of text.matchAll(/eyJ[\w-]{10,}\.([\w-]{10,})\.[\w-]{10,}/g)) {
     try {
