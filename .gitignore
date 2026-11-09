@@ -39,3 +39,4 @@ base44/.app.jsonc
 # migration reports (may contain customer data)
 migration-report.json
 media-migration-report.json
+import.sql

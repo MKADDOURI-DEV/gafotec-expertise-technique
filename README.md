@@ -50,7 +50,7 @@ npm run dev                 # http://localhost:3000
 ## Migration des données Base44 (une fois)
 1. Dans Base44 : *Dashboard → Data* → exporter chaque entité (`SiteContent`, `SiteProject`, `TeamMember`, `MediaAsset`, `ContactRequest`) en JSON ou CSV dans un dossier, p. ex. `./export`.
 2. Simulation : `npm run import:base44 -- ./export` (valide, signale doublons/slugs/enums, écrit `migration-report.json`).
-3. Import : `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run import:base44 -- ./export --apply` (idempotent).
+3. Import (idempotent), au choix : `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run import:base44 -- ./export --apply`, ou `npm run import:base44 -- ./export --sql` qui écrit `import.sql` (une transaction) à exécuter dans le SQL Editor de Supabase.
 4. Médias : `npm run migrate:media` (simulation) puis avec `--apply` : copie les fichiers hébergés par Base44 vers le bucket `media`, réécrit `src/` et la base. Relire `git diff`, commit.
 Rien n’est supprimé côté Base44.
 

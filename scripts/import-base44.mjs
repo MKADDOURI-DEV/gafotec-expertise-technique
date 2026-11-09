@@ -1,11 +1,13 @@
 // Imports a Base44 export (JSON or CSV per entity) into Supabase. READ-ONLY on Base44 (it only reads your files).
 //   node scripts/import-base44.mjs <export-dir>            dry run: validation + report, writes nothing
 //   node scripts/import-base44.mjs <export-dir> --apply    inserts into Supabase (idempotent)
+//   node scripts/import-base44.mjs <export-dir> --sql      writes import.sql (idempotent, one transaction) to run in the SQL editor
 // Needs for --apply: SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in the environment (never commit them).
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { createClient } from "@supabase/supabase-js";
 import { TARGETS, parseCsv, prepare } from "./lib/base44-import.mjs";
+import { toSql } from "./lib/sql.mjs";
 
 const [dir, ...flags] = process.argv.slice(2);
 const apply = flags.includes("--apply");
@@ -35,6 +37,12 @@ for (const entity of Object.keys(TARGETS)) {
 }
 console.table(report.entities);
 for (const issue of report.issues.slice(0, 30)) console.log(`  ! ${issue.entity}[${issue.index}]: ${issue.problem}`);
+
+if (flags.includes("--sql")) {
+  const statements = Object.values(prepared).flatMap(({ table, naturalKey, rows }) => toSql(table, naturalKey, rows));
+  writeFileSync("import.sql", `begin;\n${statements.join("\n")}\ncommit;\n`);
+  console.log(`import.sql written (${statements.length} statements)`);
+}
 
 if (apply) {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
