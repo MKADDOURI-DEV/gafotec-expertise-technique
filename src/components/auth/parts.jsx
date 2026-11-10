@@ -2,7 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { GoogleIcon } from "./GoogleIcon";
-import { loginWithGoogle } from "@/lib/authMfa";
+import { googleLoginEnabled, loginWithGoogle } from "@/lib/authMfa";
 import { returnToSearch } from "@/lib/authReturnTo";
 
 // Small pieces the auth pages share.
@@ -32,6 +32,7 @@ export function SubmitButton({ busy, busyLabel, children, ...props }) {
 }
 
 export function GoogleButton({ returnTo, onError }) {
+  if (!googleLoginEnabled()) return null;
   return (
     <Button
       type="button"
@@ -46,6 +47,7 @@ export function GoogleButton({ returnTo, onError }) {
 }
 
 export function OrDivider() {
+  if (!googleLoginEnabled()) return null;
   return (
     <div className="relative mb-6">
       <div className="absolute inset-0 flex items-center">

@@ -37,7 +37,9 @@ function Enroll({ session, onDone }) {
       ) : (
         <div className="space-y-3">
           <Button className="w-full h-12 font-medium" onClick={() => setMethod("totp")}>Set up your authenticator app</Button>
-          <Button variant="outline" className="w-full h-12 font-medium" onClick={() => setMethod("sms")}>Enter your phone number</Button>
+          {info?.auth_config?.enable_sms_mfa && (
+            <Button variant="outline" className="w-full h-12 font-medium" onClick={() => setMethod("sms")}>Enter your phone number</Button>
+          )}
         </div>
       )}
     </>

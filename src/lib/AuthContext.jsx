@@ -1,30 +1,49 @@
 import { queryOptions, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useMemo } from "react";
-import { base44 } from "@/api/base44Client";
-import { currentUrl } from "@/lib/authReturnTo";
+import { getSupabase } from "@/lib/supabase";
+import { currentPath } from "@/lib/authReturnTo";
 
 /**
  * The visitor, resolved once per page load and cached in the router's QueryClient:
  * the login gate (src/components/auth/AuthGate.jsx) reads it with
  * `context.queryClient.ensureQueryData(authQuery)`, components with `useAuth()`.
- * Resolves to `{ user, error }`: an anonymous visitor (no token, or a 401/403) is `{ user: null, error: null }`.
- * Anything else, an outage (429, 503) or a request that never got an answer, rejects instead,
- * so it is never cached as "signed out" and the next read asks again.
+ * Resolves to `{ user, error }`: no session is `{ user: null, error: null }`; an account that still owes its second
+ * factor is `{ user: null, error: { type: "mfa_required" } }`. A real outage rejects instead, so it is never cached
+ * as "signed out" and the next read asks again.
  */
 export const authQuery = queryOptions({
   queryKey: ["auth", "me"],
   queryFn: async () => {
-    // No token means no session; /me could only answer 401.
-    if (!base44.auth.hasToken()) return { user: null, error: null };
-    try {
-      return { user: await base44.auth.me(), error: null };
-    } catch (err) {
-      if (err?.data?.extra_data?.reason === "user_not_registered") {
-        return { user: null, error: { type: "user_not_registered", message: "Not registered" } };
-      }
-      if (err?.status === 401 || err?.status === 403) return { user: null, error: null };
-      throw err;
+    const supabase = getSupabase();
+    const { data: sessionData } = await supabase.auth.getSession();
+    const session = sessionData.session;
+    if (!session) return { user: null, error: null };
+
+    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+      return { user: null, error: { type: "mfa_required", message: "Second factor required" } };
     }
+
+    // RLS lets a signed-in user read their own profile row only.
+    const { data: profile, error } = await supabase
+      .from("profiles")
+      .select("role, full_name, created_at")
+      .eq("id", session.user.id)
+      .maybeSingle();
+    if (error) {
+      if (error.code === "PGRST301" || /jwt/i.test(error.message ?? "")) return { user: null, error: null };
+      throw error;
+    }
+    return {
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        full_name: profile?.full_name ?? session.user.user_metadata?.full_name ?? null,
+        role: profile?.role === "admin" ? "admin" : "user",
+        created_date: profile?.created_at ?? session.user.created_at,
+      },
+      error: null,
+    };
   },
   staleTime: Infinity,
   retry: false,
@@ -48,14 +67,13 @@ export function AuthProvider({ children }) {
       isLoadingAuth: isPending,
       authError: data?.error ?? (error ? { type: "unknown", message: error.message ?? "Failed to load session" } : null),
       refresh: () => queryClient.fetchQuery({ ...authQuery, staleTime: 0 }),
-      logout: () => {
+      logout: async () => {
         queryClient.setQueryData(authQuery.queryKey, { user: null, error: null });
-        base44.auth.logout(window.location.origin);
+        await getSupabase().auth.signOut();
+        window.location.assign("/");
       },
-      // Full-page sign-in: /login with the current page as the way back. A hard
-      // navigation on purpose — on an app served behind the platform login the
-      // platform answers /login itself; an app with its own auth pages serves its /login route.
-      navigateToLogin: () => base44.auth.redirectToLogin(currentUrl()),
+      // Full-page sign-in: /login with the current page as the way back.
+      navigateToLogin: () => window.location.assign(`/login?returnTo=${encodeURIComponent(currentPath())}`),
     }),
     [data, error, isPending, queryClient],
   );

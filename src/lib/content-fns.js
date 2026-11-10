@@ -1,25 +1,34 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { assertAdmin } from "@/lib/auth-core";
 import { requireUser } from "@/lib/auth-middleware";
 import { contentKeys } from "@/content/registry";
+import {
+  deleteRow,
+  readContent,
+  readMedia,
+  readOverview,
+  readProjects,
+  readRequests,
+  readTeam,
+  writeContent,
+  writeMedia,
+  writeProject,
+  writeRequestStatus,
+  writeTeamMember,
+} from "@/lib/data-api";
+import { getAdminDb } from "@/lib/supabase-admin";
+
+// Public reads (the site itself) use no sign-in. Every other function: requireUser (401) then assertAdmin (403),
+// both BEFORE the service-role client is created.
 
 const PROJECT_CATEGORIES = ["Industrie", "Hôtellerie", "Enseignement", "Tourisme", "Résidentiel"];
+const TEAM_GROUPS = ["Direction", "Études", "Chantier", "Support"];
+const id = z.string().uuid();
 
-function forbid() {
-  throw Object.assign(new Error("Accès réservé aux administrateurs"), { status: 403 });
-}
+// ---- Editable site text ----------------------------------------------------------------------------------------
 
-function assertAdmin(context) {
-  if (context.user?.role !== "admin") forbid();
-}
-
-/* ------------------------------------------------------------------ content */
-
-/** Public: the overrides the owner saved, as a { key: value } map. */
-export const getSiteContent = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const rows = await context.getBase44().asServiceRole.entities.SiteContent.filter({});
-  return Object.fromEntries(rows.filter((row) => row.key).map((row) => [row.key, row.value ?? ""]));
-});
+export const getSiteContent = createServerFn({ method: "GET" }).handler(async () => readContent(await getAdminDb()));
 
 export const saveSiteContent = createServerFn({ method: "POST" })
   .middleware([requireUser])
@@ -32,38 +41,14 @@ export const saveSiteContent = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    const db = context.getBase44().asServiceRole;
-    const existing = new Map(
-      (await db.entities.SiteContent.filter({})).map((row) => [row.key, row]),
-    );
-
-    const creates = [];
-    const updates = [];
-    for (const update of data.updates) {
-      if (!contentKeys.includes(update.key)) continue;
-      const current = existing.get(update.key);
-      if (current) updates.push({ id: current.id, value: update.value });
-      else creates.push({ key: update.key, value: update.value });
-    }
-
-    if (creates.length) await db.entities.SiteContent.bulkCreate(creates);
-    if (updates.length) await db.entities.SiteContent.bulkUpdate(updates);
-    return { ok: true, saved: creates.length + updates.length };
+    assertAdmin(context.user);
+    const saved = await writeContent(await getAdminDb(), data.updates, contentKeys);
+    return { ok: true, saved };
   });
 
-/* ----------------------------------------------------------------- projects */
+// ---- Projects --------------------------------------------------------------------------------------------------
 
-const sortProjects = (rows) =>
-  [...rows].sort(
-    (a, b) => (a.display_order ?? 999) - (b.display_order ?? 999) || (a.year ?? 0) - (b.year ?? 0),
-  );
-
-/** Public: every reference, already ordered for the site. */
-export const getProjects = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const rows = await context.getBase44().asServiceRole.entities.SiteProject.filter({});
-  return sortProjects(rows.map((row) => ({ ...row, scope: Array.isArray(row.scope) ? row.scope : [] })));
-});
+export const getProjects = createServerFn({ method: "GET" }).handler(async () => readProjects(await getAdminDb()));
 
 const projectSchema = z.object({
   title: z.string().trim().min(2).max(160),
@@ -87,41 +72,30 @@ const projectSchema = z.object({
 
 export const saveProject = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(projectSchema.extend({ id: z.string().optional() }))
+  .validator(projectSchema.extend({ id: id.optional() }))
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    const db = context.getBase44().asServiceRole;
-    const { id, ...values } = data;
-    const record = id
-      ? await db.entities.SiteProject.update(id, values)
-      : await db.entities.SiteProject.create(values);
-    return { ok: true, id: record.id };
+    assertAdmin(context.user);
+    return { ok: true, id: await writeProject(await getAdminDb(), data) };
   });
 
 export const deleteProject = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(z.object({ id: z.string() }))
+  .validator(z.object({ id }))
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    await context.getBase44().asServiceRole.entities.SiteProject.delete(data.id);
+    assertAdmin(context.user);
+    await deleteRow(await getAdminDb(), "site_projects", data.id);
     return { ok: true };
   });
 
-/* --------------------------------------------------------------------- team */
+// ---- Team ------------------------------------------------------------------------------------------------------
 
-const TEAM_GROUPS = ["Direction", "Études", "Chantier", "Support"];
-
-/** Public: the team as displayed on « Notre équipe », already ordered. */
-export const getTeam = createServerFn({ method: "GET" }).handler(async ({ context }) => {
-  const rows = await context.getBase44().asServiceRole.entities.TeamMember.filter({});
-  return [...rows].sort((a, b) => (a.display_order ?? 999) - (b.display_order ?? 999));
-});
+export const getTeam = createServerFn({ method: "GET" }).handler(async () => readTeam(await getAdminDb()));
 
 export const saveTeamMember = createServerFn({ method: "POST" })
   .middleware([requireUser])
   .validator(
     z.object({
-      id: z.string().optional(),
+      id: id.optional(),
       name: z.string().trim().min(2).max(120),
       role: z.string().trim().min(2).max(160),
       group: z.enum(TEAM_GROUPS),
@@ -129,32 +103,26 @@ export const saveTeamMember = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    const db = context.getBase44().asServiceRole;
-    const { id, ...values } = data;
-    const record = id
-      ? await db.entities.TeamMember.update(id, values)
-      : await db.entities.TeamMember.create(values);
-    return { ok: true, id: record.id };
+    assertAdmin(context.user);
+    return { ok: true, id: await writeTeamMember(await getAdminDb(), data) };
   });
 
 export const deleteTeamMember = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(z.object({ id: z.string() }))
+  .validator(z.object({ id }))
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    await context.getBase44().asServiceRole.entities.TeamMember.delete(data.id);
+    assertAdmin(context.user);
+    await deleteRow(await getAdminDb(), "team_members", data.id);
     return { ok: true };
   });
 
-/* -------------------------------------------------------------------- media */
+// ---- Media library ---------------------------------------------------------------------------------------------
 
 export const listMedia = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .handler(async ({ context }) => {
-    assertAdmin(context);
-    const rows = await context.getBase44().asServiceRole.entities.MediaAsset.filter({});
-    return [...rows].sort((a, b) => String(b.created_date).localeCompare(String(a.created_date)));
+    assertAdmin(context.user);
+    return readMedia(await getAdminDb());
   });
 
 export const createMedia = createServerFn({ method: "POST" })
@@ -168,39 +136,51 @@ export const createMedia = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    const record = await context.getBase44().asServiceRole.entities.MediaAsset.create(data);
-    return { ok: true, id: record.id };
+    assertAdmin(context.user);
+    return { ok: true, id: await writeMedia(await getAdminDb(), data) };
   });
 
 export const deleteMedia = createServerFn({ method: "POST" })
   .middleware([requireUser])
-  .validator(z.object({ id: z.string() }))
+  .validator(z.object({ id }))
   .handler(async ({ data, context }) => {
-    assertAdmin(context);
-    await context.getBase44().asServiceRole.entities.MediaAsset.delete(data.id);
+    assertAdmin(context.user);
+    await deleteRow(await getAdminDb(), "media_assets", data.id);
     return { ok: true };
   });
 
-/* ------------------------------------------------------------------ summary */
+// ---- Quote requests (the contact form) -------------------------------------------------------------------------
+
+export const listContactRequests = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    assertAdmin(context.user);
+    return readRequests(await getAdminDb());
+  });
+
+export const setContactRequestStatus = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id, status: z.enum(["nouveau", "traite"]) }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    await writeRequestStatus(await getAdminDb(), data.id, data.status);
+    return { ok: true };
+  });
+
+export const deleteContactRequest = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    await deleteRow(await getAdminDb(), "contact_requests", data.id);
+    return { ok: true };
+  });
+
+// ---- Dashboard overview ----------------------------------------------------------------------------------------
 
 export const getAdminOverview = createServerFn({ method: "GET" })
   .middleware([requireUser])
   .handler(async ({ context }) => {
-    assertAdmin(context);
-    const db = context.getBase44().asServiceRole;
-    const [projects, media, content, requests] = await Promise.all([
-      db.entities.SiteProject.filter({}),
-      db.entities.MediaAsset.filter({}),
-      db.entities.SiteContent.filter({}),
-      db.entities.ContactRequest.filter({}),
-    ]);
-    const open = requests.filter((item) => item.status !== "traite").length;
-    return {
-      projects: projects.length,
-      media: media.length,
-      content: content.length,
-      requests: requests.length,
-      openRequests: open,
-    };
+    assertAdmin(context.user);
+    return readOverview(await getAdminDb());
   });

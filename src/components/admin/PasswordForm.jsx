@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { getSupabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,11 +30,16 @@ export default function PasswordForm({ userId }) {
 
     setSaving(true);
     try {
-      await base44.auth.changePassword({
-        userId,
-        currentPassword: form.currentPassword,
-        newPassword: form.newPassword,
+      const supabase = getSupabase();
+      const { data: sessionData } = await supabase.auth.getSession();
+      // The current password is re-checked before it can be replaced.
+      const { error: checkError } = await supabase.auth.signInWithPassword({
+        email: sessionData.session?.user?.email ?? "",
+        password: form.currentPassword,
       });
+      if (checkError) throw checkError;
+      const { error: updateError } = await supabase.auth.updateUser({ password: form.newPassword });
+      if (updateError) throw updateError;
       setForm(empty);
       toast.success("Mot de passe mis à jour");
     } catch {

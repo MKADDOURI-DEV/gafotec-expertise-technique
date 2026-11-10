@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FolderKanban, Images, KeyRound, LayoutDashboard, Type, Users } from "lucide-react";
+import { FolderKanban, Images, Inbox, KeyRound, LayoutDashboard, Type, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
@@ -8,6 +8,7 @@ const links = [
   { to: "/admin/realisations", label: "Réalisations", icon: FolderKanban },
   { to: "/admin/equipe", label: "Équipe", icon: Users },
   { to: "/admin/medias", label: "Médiathèque", icon: Images },
+  { to: "/admin/demandes", label: "Demandes de devis", icon: Inbox },
   { to: "/admin/compte", label: "Mon compte", icon: KeyRound },
 ];
 

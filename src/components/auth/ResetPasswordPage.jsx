@@ -1,16 +1,23 @@
 import { Link } from "@tanstack/react-router";
 import { AlertTriangle, Lock } from "lucide-react";
-import { useState } from "react";
-import { base44 } from "@/api/base44Client";
+import { useEffect, useState } from "react";
+import { getSupabase } from "@/lib/supabase";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthError, SubmitButton } from "@/components/auth/parts";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// The /reset-password page; the reset email links here with ?token=.
+// The /reset-password page; the reset (or invitation) email links here and Supabase opens a short recovery session.
 export function ResetPasswordPage() {
-  // Read raw: the router's search parser would turn an all-digit token into a number.
-  const token = new URLSearchParams(window.location.search).get("token");
+  // null while the link is being checked, then whether it opened a valid session.
+  const [linkValid, setLinkValid] = useState(null);
+  useEffect(() => {
+    // getSession() waits for the client to finish exchanging the ?code= / #access_token= of the link.
+    getSupabase()
+      .auth.getSession()
+      .then(({ data }) => setLinkValid(!!data.session))
+      .catch(() => setLinkValid(false));
+  }, []);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState("");
@@ -25,7 +32,10 @@ export function ResetPasswordPage() {
     }
     setBusy(true);
     try {
-      await base44.auth.resetPassword({ resetToken: token, newPassword: password });
+      const supabase = getSupabase();
+      const { error: updateError } = await supabase.auth.updateUser({ password });
+      if (updateError) throw updateError;
+      await supabase.auth.signOut();
       window.location.href = "/login";
     } catch (err) {
       setError(err.message || "Failed to reset password");
@@ -33,7 +43,8 @@ export function ResetPasswordPage() {
     }
   }
 
-  if (!token) {
+  if (linkValid === null) return null;
+  if (!linkValid) {
     return (
       <AuthLayout
         icon={AlertTriangle}

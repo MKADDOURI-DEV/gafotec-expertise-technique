@@ -1,7 +1,7 @@
 import { Lock, Mail, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { base44 } from "@/api/base44Client";
+import { getSupabase } from "@/lib/supabase";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthError, AuthLink, GoogleButton, OrDivider, SubmitButton } from "@/components/auth/parts";
 import { Input } from "@/components/ui/input";
@@ -36,7 +36,8 @@ export function RegisterPage() {
     }
     setBusy(true);
     try {
-      await base44.auth.register({ email, password });
+      const { error: signUpError } = await getSupabase().auth.signUp({ email, password });
+      if (signUpError) throw signUpError;
       setStep("otp");
     } catch (err) {
       setError(err.message || "Registration failed");
@@ -50,8 +51,11 @@ export function RegisterPage() {
     setError("");
     setBusy(true);
     try {
-      const result = await base44.auth.verifyOtp({ email, otpCode });
-      if (result?.mfa_required) {
+      const { error: otpError } = await getSupabase().auth.verifyOtp({ email, token: otpCode, type: "signup" });
+      if (otpError) throw otpError;
+      const { data: aal } = await getSupabase().auth.mfa.getAuthenticatorAssuranceLevel();
+      const result = { mfa_required: aal?.nextLevel === "aal2" && aal.currentLevel !== "aal2" };
+      if (result.mfa_required) {
         // The account is already verified, so a retry here would fail; sign in again instead.
         await continueMfa(result, returnTo).catch(() => {
           setStep("already_verified");
@@ -59,7 +63,6 @@ export function RegisterPage() {
         });
         return;
       }
-      if (result?.access_token) base44.auth.setToken(result.access_token);
       window.location.href = returnTo;
     } catch (err) {
       // Verified server-side but the answer never arrived: the code is spent and
@@ -73,7 +76,8 @@ export function RegisterPage() {
   async function resend() {
     setError("");
     try {
-      await base44.auth.resendOtp(email);
+      const { error: resendError } = await getSupabase().auth.resend({ type: "signup", email });
+      if (resendError) throw resendError;
       toast("Code sent", { description: "Check your email for the new code." });
     } catch (err) {
       if (isAlreadyVerified(err)) setStep("already_verified");

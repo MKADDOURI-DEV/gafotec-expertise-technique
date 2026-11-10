@@ -3,7 +3,6 @@ import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import { NotFound } from "@/components/NotFound";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/AuthContext";
-import { Base44Scripts } from "base44:document";
 import { images } from "@/data/site";
 import appCss from "@/index.css?url";
 
@@ -73,10 +72,8 @@ function RootDocument({ children }) {
       <head>
         <HeadContent />
       </head>
-      {/* data-react-root: the builder's preview bridge looks for #root and falls back to this. */}
-      <body data-react-root="true">
+      <body>
         {children}
-        <Base44Scripts />
         <Scripts />
       </body>
     </html>
