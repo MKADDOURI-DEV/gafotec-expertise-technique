@@ -64,7 +64,7 @@ export const mappers = {
     if (!TEAM_GROUPS.includes(group)) return { error: `unknown group "${group}"` };
     return { row: { name: text(r.name), role: text(r.role), group_name: group, display_order: int(r.display_order), ...stamps(r) } };
   },
-  MediaAsset: (r) => (text(r.url) ? { row: { title: optional(r.title), kind: text(r.kind) === "video" ? "video" : "image", url: text(r.url), alt: optional(r.alt), ...stamps(r) } } : { error: "missing url" }),
+  MediaAsset: (r) => (text(r.url) ? { row: { title: optional(r.title), kind: text(r.kind) === "video" ? "video" : "image", url: text(r.url), alt: optional(r.alt), ...(date(r.created_date) && { created_at: date(r.created_date) }) } } : { error: "missing url" }),
   ContactRequest: (r) => {
     if (!text(r.full_name) || !text(r.email) || !text(r.phone) || !text(r.message)) return { error: "missing required field" };
     if (!SERVICES.includes(text(r.service))) return { error: `unknown service "${text(r.service)}"` };

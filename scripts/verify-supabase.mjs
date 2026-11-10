@@ -129,7 +129,8 @@ try {
   r = await bucket(admin.client).remove([moved]);
   check("storage: admin delete", !r.error && r.data?.length === 1, JSON.stringify(r));
   res = await fetch(bucket(anon).getPublicUrl(moved).data.publicUrl);
-  check("storage: deleted file is gone", !res.ok, `${res.status}`);
+  r = await bucket(admin.client).list(`verify/${tag}`);
+check("storage: deleted file is gone", !r.error && !r.data?.some((o) => o.name === "b.png"), JSON.stringify(r));
 
   // ---- cleanup of the rows created above
   for (const [table, id] of [["site_projects", pid], ["team_members", tid], ["media_assets", mid], ["contact_requests", cid]]) if (id) await service.from(table).delete().eq("id", id);

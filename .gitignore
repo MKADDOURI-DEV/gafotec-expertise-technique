@@ -40,3 +40,6 @@ base44/.app.jsonc
 migration-report.json
 media-migration-report.json
 import.sql
+
+# Private Base44 export
+base44/gafotec-export-complet.json

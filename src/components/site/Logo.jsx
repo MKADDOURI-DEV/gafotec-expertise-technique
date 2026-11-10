@@ -3,7 +3,7 @@ import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 
 const LOGO_URL =
-  "https://base44.app/api/apps/6aec634f0232d4cd71a02dc5/files/mp/public/6aec634f0232d4cd71a02dc5/d5f1a25a3_gafotec-logo.jpeg";
+  "https://gblmsjddkfgetdyhheao.supabase.co/storage/v1/object/public/media/legacy/7e4e1c28f918-d5f1a25a3_gafotec-logo.jpeg";
 
 /** Official GAFOTEC logo. On dark backgrounds it sits on a white plate (the file has a white background). */
 export default function Logo({ inverted = false, className = "" }) {

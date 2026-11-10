@@ -13,14 +13,44 @@ const [dir, ...flags] = process.argv.slice(2);
 const apply = flags.includes("--apply");
 if (!dir) (console.error("usage: node scripts/import-base44.mjs <export-dir> [--apply]"), process.exit(2));
 
+const mediaReportPath = join(dir, "..", "media-migration-report.json");
+
+if (!existsSync(mediaReportPath)) {
+  console.error("media-migration-report.json not found");
+  process.exit(2);
+}
+
+const mediaReport = JSON.parse(readFileSync(mediaReportPath, "utf8"));
+const mediaUrlMap = new Map(
+  mediaReport.urls
+    .filter(x => x.ok && x.source && x.target)
+    .map(x => [x.source, x.target])
+);
+
 function load(entity) {
-  for (const name of [`${entity}.json`, `${entity}.csv`, `${entity.toLowerCase()}.json`, `${entity.toLowerCase()}.csv`]) {
+  for (const name of [`${entity}.json`, `${entity}.csv`, `${entity.toLowerCase()}.json`, `${entity.toLowerCase()}.csv`, "gafotec-export-complet.json"]) {
     const path = join(dir, name);
     if (!existsSync(path)) continue;
     const content = readFileSync(path, "utf8");
-    if (name.endsWith(".csv")) return parseCsv(content);
-    const json = JSON.parse(content);
-    return Array.isArray(json) ? json : (json.data ?? json.items ?? json.records ?? []);
+const json = name.endsWith(".csv") ? null : JSON.parse(content);
+
+const records = name.endsWith(".csv")
+  ? parseCsv(content)
+  : (Array.isArray(json) ? json : (Array.isArray(json[entity]) ? json[entity] : (json.data ?? json.items ?? json.records ?? [])));
+
+return records.map(record => {
+  const copy = { ...record };
+
+  if (entity === "MediaAsset" && copy.url) {
+    copy.url = mediaUrlMap.get(copy.url) ?? copy.url;
+  }
+
+  if (entity === "SiteProject" && copy.image) {
+    copy.image = mediaUrlMap.get(copy.image) ?? copy.image;
+  }
+
+  return copy;
+});
   }
   return null;
 }
@@ -51,14 +81,19 @@ if (apply) {
   const db = createClient(url, key, { auth: { persistSession: false } });
   for (const [entity, { table, naturalKey, rows }] of Object.entries(prepared)) {
     if (!rows.length) continue;
-    if (naturalKey) {
-      const { error } = await db.from(table).upsert(rows, { onConflict: naturalKey });
+    if (naturalKey && entity !== "MediaAsset") {
+  const { error } = await db.from(table).upsert(rows, { onConflict: naturalKey });
       if (error) (console.error(`${entity}: ${error.message}`), process.exit(1));
     } else {
       // No natural key: skip rows already present, so a second run adds nothing.
       const { data: existing, error } = await db.from(table).select("*");
       if (error) (console.error(`${entity}: ${error.message}`), process.exit(1));
-      const sig = (r) => JSON.stringify([r.name ?? r.email, r.role ?? r.message, r.created_at?.slice(0, 19)]);
+      const sig = (r) => {
+  if (entity === "MediaAsset") return JSON.stringify([r.url]);
+  if (entity === "TeamMember") return JSON.stringify([r.name, r.role, r.created_at?.slice(0, 19)]);
+  if (entity === "ContactRequest") return JSON.stringify([r.email, r.message, r.created_at?.slice(0, 19)]);
+  return JSON.stringify(r);
+};
       const have = new Set(existing.map(sig));
       const fresh = rows.filter((r) => !have.has(sig(r)));
       if (fresh.length) {

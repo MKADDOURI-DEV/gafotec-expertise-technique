@@ -26,7 +26,40 @@ if (apply && (!url || !key)) (console.error("SUPABASE_URL / SUPABASE_SERVICE_ROL
 const db = url && key ? createClient(url, key, { auth: { persistSession: false } }) : null;
 
 const found = new Map(); // url -> where
-for (const file of sourceFiles("src")) for (const m of readFileSync(file, "utf8").matchAll(HOST)) found.set(m[0], file);
+
+for (const file of sourceFiles("src")) {
+  const content = readFileSync(file, "utf8");
+
+  for (const m of content.matchAll(HOST)) {
+    const pathname = new URL(m[0]).pathname;
+    const filename = pathname.split("/").pop();
+
+    if (/\.[a-z0-9]{2,5}$/i.test(filename)) {
+      found.set(m[0], file);
+    }
+  }
+
+  const bases = new Map();
+
+  const basePattern =
+    /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*["'](https?:\/\/(?:media\.base44\.com|[\w.-]*base44\.app|[\w.-]*base44\.com)\/[^"']+)["']/g;
+
+  for (const m of content.matchAll(basePattern)) {
+    bases.set(m[1], m[2].replace(/\/+$/, ""));
+  }
+
+  const templatePattern = /\$\{([A-Za-z_$][\w$]*)\}\/([^`]+)`/g;
+
+  for (const m of content.matchAll(templatePattern)) {
+    const base = bases.get(m[1]);
+    if (!base) continue;
+
+    const filename = m[2].trim();
+    if (!/\.[a-z0-9]{2,5}$/i.test(filename)) continue;
+
+    found.set(`${base}/${filename}`, file);
+  }
+}
 const columns = [["site_projects", "image"], ["media_assets", "url"], ["site_content", "value"]];
 if (db) {
   for (const [table, column] of columns) {
@@ -68,7 +101,10 @@ for (const [source, where] of found) {
 if (apply) {
   const failed = report.urls.filter((u) => !u.ok);
   if (failed.length) (console.error(`${failed.length} file(s) failed: nothing was rewritten.`), writeFileSync("media-migration-report.json", JSON.stringify(report, null, 2)), process.exit(1));
-  const swap = (s) => Object.entries(mapping).reduce((acc, [from, to]) => acc.split(from).join(to), s);
+  const swap = (s) => Object.entries(mapping).reduce((acc, [from, to]) => {
+    const filename = new URL(from).pathname.split("/").pop();
+    return acc.split(from).join(to).split("${MEDIA}/" + filename).join(to);
+  }, s);
   for (const file of sourceFiles("src")) {
     const before = readFileSync(file, "utf8"), after = swap(before);
     if (after !== before) writeFileSync(file, after);
