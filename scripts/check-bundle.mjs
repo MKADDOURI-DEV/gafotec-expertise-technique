@@ -47,7 +47,9 @@ for (const file of files(root)) {
       if (JSON.parse(Buffer.from(match[1], "base64url").toString()).role === "service_role") {
         hits.push(`service_role JWT in ${file}`);
       }
-    } catch {}
+    } catch {
+      // not a JWT payload: ignore
+    }
   }
 }
 
