@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Loader2, Send } from "lucide-react";
 import { submitQuoteRequest } from "@/lib/server-fns";
-import { company, serviceOptions, whatsappLink } from "@/data/site";
+import { company, whatsappLink } from "@/data/site";
+import { useServiceOptions } from "@/components/content/ExpertisesProvider";
 import { cn } from "@/lib/utils";
 
 const EMPTY = { full_name: "", company: "", email: "", phone: "", service: "", message: "" };
@@ -22,6 +23,7 @@ const fieldClass =
   "w-full border border-input bg-background px-3.5 py-3 text-[14px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-primary";
 
 export default function QuoteForm({ defaultService = "" }) {
+  const serviceOptions = useServiceOptions();
   const [values, setValues] = useState({ ...EMPTY, service: defaultService });
   const [errors, setErrors] = useState({});
   const [status, setStatus] = useState("idle");

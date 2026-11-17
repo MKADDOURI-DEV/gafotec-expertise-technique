@@ -18,10 +18,13 @@ const DEFAULTS = {
   contact_requests: () => ({ status: "nouveau" }),
   site_content: () => ({ value: "" }),
   profiles: () => ({ role: "user" }),
+  // Optional table: absent (PostgREST 404 PGRST205) until a test "applies the SQL" with `fake.db.site_expertises = []`.
+  site_expertises: () => ({ short: "", excerpt: "", description: "", interventions: [], expertise: [], image: "" }),
 };
+const OPTIONAL_TABLES = new Set(["site_expertises"]);
 
 export function startFakeSupabase(port) {
-  const db = Object.fromEntries(Object.keys(DEFAULTS).map((t) => [t, []]));
+  const db = Object.fromEntries(Object.keys(DEFAULTS).filter((t) => !OPTIONAL_TABLES.has(t)).map((t) => [t, []]));
   const calls = { invite: [], rest: [] };
   const users = new Map(); // id -> {id,email,factors}
 

@@ -6,18 +6,23 @@ import { contentKeys } from "@/content/registry";
 import {
   deleteRow,
   readContent,
+  readExpertises,
   readMedia,
   readOverview,
   readProjects,
   readRequests,
   readTeam,
+  reorderExpertises,
   writeContent,
+  writeExpertise,
   writeMedia,
   writeProject,
   writeRequestStatus,
   writeTeamMember,
 } from "@/lib/data-api";
 import { getAdminDb } from "@/lib/supabase-admin";
+import { normalizeExpertises, slugify } from "@/lib/expertises";
+import { services as staticServices } from "@/data/site";
 
 // Public reads (the site itself) use no sign-in. Every other function: requireUser (401) then assertAdmin (403),
 // both BEFORE the service-role client is created.
@@ -84,6 +89,74 @@ export const deleteProject = createServerFn({ method: "POST" })
   .handler(async ({ data, context }) => {
     assertAdmin(context.user);
     await deleteRow(await getAdminDb(), "site_projects", data.id);
+    return { ok: true };
+  });
+
+// ---- Expertises ------------------------------------------------------------------------------------------------
+
+// Public read. `source: "static"` = the table does not exist yet, the site keeps showing its built-in list.
+export const getExpertises = createServerFn({ method: "GET" }).handler(async () => {
+  const rows = await readExpertises(await getAdminDb());
+  if (rows === null) return { source: "static", items: normalizeExpertises(staticServices) };
+  return { source: "db", items: rows };
+});
+
+const lines = z.array(z.string().trim().min(1).max(220)).max(20);
+const expertiseSchema = z.object({
+  title: z.string().trim().min(2).max(160),
+  slug: z
+    .string()
+    .trim()
+    .max(80)
+    .regex(/^[a-z0-9-]*$/, "Identifiant d’URL invalide (minuscules, chiffres et tirets)")
+    .optional(),
+  short: z.string().trim().max(40).optional().default(""),
+  excerpt: z.string().trim().max(400).optional().default(""),
+  description: z.string().trim().max(3000).optional().default(""),
+  interventions: lines.optional().default([]),
+  expertise: lines.optional().default([]),
+  image: z.string().trim().max(700).optional().default(""),
+});
+
+async function requireExpertiseTable(db) {
+  if ((await readExpertises(db)) === null) {
+    const error = new Error("La table des expertises n’existe pas encore : le SQL doit d’abord être appliqué sur Supabase.");
+    error.status = 409;
+    throw error;
+  }
+}
+
+export const saveExpertise = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(expertiseSchema.extend({ id: id.optional() }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    const db = await getAdminDb();
+    await requireExpertiseTable(db);
+    const row = { ...data, slug: data.slug || (data.id ? undefined : slugify(data.title)) || (data.id ? undefined : "expertise") };
+    if (row.slug === undefined) delete row.slug;
+    return { ok: true, id: await writeExpertise(db, row) };
+  });
+
+export const deleteExpertise = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    const db = await getAdminDb();
+    await requireExpertiseTable(db);
+    await deleteRow(db, "site_expertises", data.id);
+    return { ok: true };
+  });
+
+export const reorderExpertiseList = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ ids: z.array(id).min(1).max(100) }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    const db = await getAdminDb();
+    await requireExpertiseTable(db);
+    await reorderExpertises(db, data.ids);
     return { ok: true };
   });
 

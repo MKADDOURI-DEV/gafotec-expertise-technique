@@ -6,7 +6,8 @@ import Values from "@/components/home/Values";
 import Approach from "@/components/home/Approach";
 import ContactCTA from "@/components/home/ContactCTA";
 import { Image } from "@/components/ui/image";
-import { images, services } from "@/data/site";
+import { images } from "@/data/site";
+import { useExpertises } from "@/components/content/ExpertisesProvider";
 
 export const Route = createFileRoute("/_site/a-propos")({
   head: () => ({
@@ -46,6 +47,7 @@ const pillars = [
 ];
 
 function AboutPage() {
+  const services = useExpertises();
   return (
     <>
       <PageHero contentKey="propos" />

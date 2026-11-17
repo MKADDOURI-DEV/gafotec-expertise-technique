@@ -1,10 +1,13 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { FolderKanban, Images, Inbox, KeyRound, LayoutDashboard, Type, Users } from "lucide-react";
+import { FolderKanban, Images, Inbox, KeyRound, LayoutDashboard, Shapes, Type, Users, Video, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const links = [
   { to: "/admin", label: "Aperçu", icon: LayoutDashboard },
   { to: "/admin/contenu", label: "Contenu du site", icon: Type },
+  { to: "/admin/logo", label: "Gestion du logo", icon: Shapes },
+  { to: "/admin/expertises", label: "Gestion des expertises", icon: Wrench },
+  { to: "/admin/our-values", label: "Section Our Values", icon: Video },
   { to: "/admin/realisations", label: "Réalisations", icon: FolderKanban },
   { to: "/admin/equipe", label: "Équipe", icon: Users },
   { to: "/admin/medias", label: "Médiathèque", icon: Images },

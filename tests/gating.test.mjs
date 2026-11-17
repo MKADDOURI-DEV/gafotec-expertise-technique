@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const PUBLIC = new Set(["getSiteContent", "getProjects", "getTeam", "submitQuoteRequest", "getServerInfo"]);
+const PUBLIC = new Set(["getSiteContent", "getProjects", "getTeam", "getExpertises", "submitQuoteRequest", "getServerInfo"]);
 
 function serverFns(path) {
   const source = readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");

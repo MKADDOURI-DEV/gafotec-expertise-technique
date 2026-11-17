@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { writeQuote } from "@/lib/data-api";
+import { readExpertises, writeQuote } from "@/lib/data-api";
+import { services as builtInServices } from "@/data/site";
 import { getAdminDb } from "@/lib/supabase-admin";
 
 export const getServerInfo = createServerFn({ method: "GET" }).handler(async () => ({
@@ -12,16 +13,8 @@ const quoteSchema = z.object({
   company: z.string().trim().max(160).optional().default(""),
   email: z.string().trim().toLowerCase().email("Adresse e-mail invalide").max(180),
   phone: z.string().trim().min(6, "Téléphone invalide").max(40),
-  service: z.enum([
-    "Climatisation & Ventilation",
-    "Plomberie sanitaire",
-    "Chauffage central",
-    "Protection contre l’incendie",
-    "Désenfumage",
-    "Piscines",
-    "Énergie solaire photovoltaïque",
-    "Autre / Plusieurs métiers",
-  ]),
+  // The allowed values follow the expertises managed in the admin (checked in the handler), plus the catch-all.
+  service: z.string().trim().min(2).max(160),
   message: z.string().trim().min(15, "Merci de détailler votre projet").max(4000),
 });
 
@@ -33,7 +26,15 @@ const quoteSchema = z.object({
 export const submitQuoteRequest = createServerFn({ method: "POST" })
   .validator(quoteSchema)
   .handler(async ({ data }) => {
-    const reference = await writeQuote(await getAdminDb(), {
+    const db = await getAdminDb();
+    const expertises = (await readExpertises(db)) ?? builtInServices; // table missing -> the built-in list
+    const allowed = new Set([...expertises.map((item) => item.title), "Autre / Plusieurs métiers"]);
+    if (!allowed.has(data.service)) {
+      const error = new Error("Service inconnu : choisissez un métier dans la liste.");
+      error.status = 400;
+      throw error;
+    }
+    const reference = await writeQuote(db, {
       full_name: data.full_name,
       company: data.company ?? "",
       email: data.email,
