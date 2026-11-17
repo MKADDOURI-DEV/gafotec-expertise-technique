@@ -4,7 +4,8 @@ import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import ContactCTA from "@/components/home/ContactCTA";
 import { Image } from "@/components/ui/image";
-import { images, services } from "@/data/site";
+import { images, services as builtInServices } from "@/data/site";
+import { useExpertises } from "@/components/content/ExpertisesProvider";
 
 export const Route = createFileRoute("/_site/energies-photovoltaiques")({
   head: () => ({
@@ -75,7 +76,9 @@ const benefits = [
 ];
 
 function SolarPage() {
-  const service = services.find((s) => s.slug === "photovoltaique");
+  const expertises = useExpertises();
+  const service =
+    expertises.find((s) => s.slug === "photovoltaique") ?? builtInServices.find((s) => s.slug === "photovoltaique");
 
   return (
     <>

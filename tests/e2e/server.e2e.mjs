@@ -68,7 +68,7 @@ const check = (label, ok, extra = "") => (ok ? pass++ : fail++, console.log(`${o
 const KEY = /key:\s*"([^"]+)"/.exec(readFileSync(new URL("../../src/content/registry.js", import.meta.url), "utf8"))[1]; // a real, editable content key
 const project = { title: "Projet E2E", slug: "projet-e2e", year: 2025, category: "Industrie", location: "Fès", status: "En cours", image: "https://x/y.jpg", summary: "s", description: "d", scope: ["CVC"], featured: true, display_order: 3 };
 
-check("all 17 server functions found in the build", Object.keys(ids).length >= 17, Object.keys(ids).join(","));
+check("all 21 server functions found in the build", Object.keys(ids).length >= 21, Object.keys(ids).join(","));
 
 // ---- authentication / authorization on every admin function
 const adminCalls = [
@@ -76,6 +76,7 @@ const adminCalls = [
   ["saveProject", project], ["deleteProject", { id: USER }],
   ["saveTeamMember", { name: "Nom", role: "Role", group: "Direction" }], ["deleteTeamMember", { id: USER }],
   ["createMedia", { kind: "image", url: "https://x/y.jpg" }], ["deleteMedia", { id: USER }],
+  ["saveExpertise", { title: "Expertise test" }], ["deleteExpertise", { id: USER }], ["reorderExpertiseList", { ids: [USER] }],
   ["inviteUser", { email: "new@x.io", role: "admin" }],
   ["setContactRequestStatus", { id: USER, status: "traite" }], ["deleteContactRequest", { id: USER }],
 ];
@@ -161,6 +162,64 @@ check("admin: delete team member", (await call("deleteTeamMember", { id: tid }, 
 check("admin: delete contact request", (await call("deleteContactRequest", { id: reqId }, A)).status === 200 && fake.db.contact_requests.length === 0);
 check("admin: delete media", (await call("deleteMedia", { id: mid }, A)).status === 200 && fake.db.media_assets.length === 0);
 check("db errors never reach the client", !JSON.stringify((await call("deleteProject", { id: "not-a-uuid" }, A)).body).includes("relation"));
+
+
+// ---- NEW: expertises, logo, « Our Values » (all against the production build)
+const page = async (path) => (await fetch(`http://127.0.0.1:${APP}${path}`)).text();
+r = await call("getExpertises", undefined, undefined, "GET");
+check("public: expertises fall back to the built-in list while the table does not exist", r.status === 200 && r.body?.source === "static" && r.body.items.length === 7 && r.body.items[0].number === "01", JSON.stringify(r).slice(0, 200));
+r = await call("saveExpertise", { title: "Test" }, A);
+check("admin: expertise edit refused with a clear 409 until the SQL is applied", r.status === 409, r.status);
+let html = await page("/nos-expertises");
+check("page: /nos-expertises still renders the built-in expertises", html.includes("Climatisation"), html.length);
+
+fake.db.site_expertises = []; // = the SQL was applied
+const base = { short: "", excerpt: "", description: "d", interventions: ["a", "b"], expertise: ["x"], image: "https://x.supabase.co/a.jpg" };
+r = await call("saveExpertise", { ...base, title: "Climatisation & Ventilation", short: "CVC" }, A);
+const eA = r.body?.id;
+check("admin: create expertise (slug generated from the title, placed first)", r.status === 200 && fake.db.site_expertises[0]?.slug === "climatisation-et-ventilation" && fake.db.site_expertises[0].display_order === 0, JSON.stringify(r));
+r = await call("saveExpertise", { ...base, title: "Piscines" }, A);
+const eB = r.body?.id;
+check("admin: new expertise goes last", r.status === 200 && fake.db.site_expertises[1]?.display_order === 1, JSON.stringify(r));
+r = await call("getExpertises", undefined, undefined, "GET");
+check("public: expertises now come from the database, numbered in order", r.body?.source === "db" && r.body.items.map((e) => e.number).join() === "01,02" && r.body.items[0].title === "Climatisation & Ventilation", JSON.stringify(r).slice(0, 220));
+r = await call("reorderExpertiseList", { ids: [eB, eA] }, A);
+r = await call("getExpertises", undefined, undefined, "GET");
+check("admin: reorder changes the public display order", r.body?.items[0]?.title === "Piscines" && r.body.items[0].number === "01", JSON.stringify(r).slice(0, 220));
+r = await call("saveExpertise", { ...base, id: eA, title: "Climatisation & Ventilation — Maroc", image: "https://x.supabase.co/new-cvc.jpg" }, A);
+check("admin: edit title + image, slug unchanged", r.status === 200 && fake.db.site_expertises.find((e) => e.id === eA).slug === "climatisation-et-ventilation", JSON.stringify(r));
+html = await page("/nos-expertises");
+check("page: edited title and replaced image appear on the public page, persistently", html.includes("Climatisation &amp; Ventilation — Maroc") && html.includes("new-cvc.jpg"), html.length);
+r = await call("submitQuoteRequest", { full_name: "Visiteur", email: "v@x.io", phone: "0600000000", service: "Climatisation & Ventilation — Maroc", message: "Bonjour, un devis svp pour le site." });
+check("quote form accepts a renamed expertise", r.status === 200, JSON.stringify(r));
+r = await call("submitQuoteRequest", { full_name: "Visiteur", email: "v@x.io", phone: "0600000000", service: "Service inventé", message: "Bonjour, un devis svp pour le site." });
+check("quote form refuses a service that is not an expertise (400)", r.status === 400, r.status);
+fake.db.contact_requests.length = 0;
+check("admin: delete expertise", (await call("deleteExpertise", { id: eB }, A)).status === 200 && fake.db.site_expertises.length === 1);
+check("admin: delete the last one -> empty list, NOT the built-in one", (await call("deleteExpertise", { id: eA }, A)).status === 200 && (await call("getExpertises", undefined, undefined, "GET")).body?.items.length === 0);
+
+html = await page("/notre-equipe");
+check("Our Values: section is shown after the team section", html.includes("Our Values") && html.indexOf("Our Values") > html.indexOf("Comment nous travaillons"), html.length);
+check("Our Values: NO player and NO download button while nothing is imported", !html.includes("<video") && !html.includes("Télécharger la présentation"));
+r = await call("saveSiteContent", { updates: [
+  { key: "values.video_url", value: "https://x.supabase.co/storage/v1/object/public/media/values/video/v.mp4" },
+  { key: "values.pdf_url", value: "https://x.supabase.co/storage/v1/object/public/media/values/pdf/p.pdf" },
+  { key: "values.pdf_name", value: "presentation.pdf" },
+  { key: "values.button_label", value: "Télécharger la présentation de GAFOTEC" },
+] }, A);
+check("admin: managed Our Values keys are accepted", r.status === 200 && r.body.saved === 4, JSON.stringify(r));
+html = await page("/notre-equipe");
+check("Our Values: player + download button appear once files exist", html.includes("<video") && html.includes("v.mp4") && html.includes("download=presentation.pdf") && html.includes("Télécharger la présentation de GAFOTEC"), html.length);
+await call("saveSiteContent", { updates: ["values.video_url", "values.pdf_url"].map((key) => ({ key, value: "" })) }, A);
+html = await page("/notre-equipe");
+check("Our Values: deleting the files removes the player and the button", !html.includes("<video") && !html.includes("download=presentation.pdf"));
+
+r = await call("saveSiteContent", { updates: [{ key: "logo.url", value: "https://x.supabase.co/storage/v1/object/public/media/logo/new-logo.png" }, { key: "logo.height", value: "60" }, { key: "logo.width", value: "" }] }, A);
+check("admin: logo keys are accepted", r.status === 200 && r.body.saved === 3, JSON.stringify(r));
+for (const path of ["/", "/nos-expertises", "/notre-equipe", "/contact"]) {
+  html = await page(path);
+  check(`logo: new file and 60px height applied on ${path}`, html.includes("new-logo.png") && html.includes("height:60px"), path);
+}
 
 server.kill();
 fake.close();

@@ -2,9 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Mail, MapPin, Phone } from "lucide-react";
 import Logo from "@/components/site/Logo";
 import { useCompany, useContent } from "@/components/content/ContentProvider";
-import { navLinks, services, whatsappLink } from "@/data/site";
+import { navLinks, whatsappLink } from "@/data/site";
+import { useExpertises } from "@/components/content/ExpertisesProvider";
 
 export default function Footer() {
+  const services = useExpertises();
   const year = new Date().getFullYear();
   const company = useCompany();
   const { t } = useContent();

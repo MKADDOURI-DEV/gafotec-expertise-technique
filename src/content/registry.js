@@ -244,6 +244,33 @@ export const contentGroups = [
 
 export const contentFields = contentGroups.flatMap((group) => group.fields);
 
-export const contentDefaults = Object.fromEntries(contentFields.map((field) => [field.key, field.default]));
+/**
+ * Keys managed by dedicated admin pages (logo, "Our Values"), not by the generic « Contenu du site » form.
+ * They live in the same SiteContent table; `default` is what the public site shows until the owner saves something.
+ */
+export const managedContent = {
+  // Logo: empty `logo.url` = the logo shipped with the site. Width/height (px) only change how it is displayed.
+  "logo.url": "",
+  "logo.width": "",
+  "logo.height": "",
+  // « Our Values » section (page Notre équipe)
+  "values.title": "Our Values",
+  "values.intro": "Découvrez GAFOTEC, ses engagements et sa façon de travailler.",
+  "values.button_label": "Télécharger la présentation de GAFOTEC",
+  "values.video_url": "",
+  "values.video_path": "",
+  "values.video_name": "",
+  "values.video_size": "",
+  "values.video_duration": "",
+  "values.pdf_url": "",
+  "values.pdf_path": "",
+  "values.pdf_name": "",
+  "values.pdf_size": "",
+};
 
-export const contentKeys = contentFields.map((field) => field.key);
+export const contentDefaults = {
+  ...managedContent,
+  ...Object.fromEntries(contentFields.map((field) => [field.key, field.default])),
+};
+
+export const contentKeys = [...contentFields.map((field) => field.key), ...Object.keys(managedContent)];

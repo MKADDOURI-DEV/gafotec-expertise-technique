@@ -2,7 +2,8 @@ import { Link } from "@tanstack/react-router";
 import { ArrowUpRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
 import Reveal from "@/components/site/Reveal";
-import { images, services } from "@/data/site";
+import { images } from "@/data/site";
+import { useExpertises } from "@/components/content/ExpertisesProvider";
 
 function ServiceCard({ service, index }) {
   return (
@@ -42,6 +43,7 @@ function ServiceCard({ service, index }) {
 }
 
 export default function ExpertiseGrid() {
+  const services = useExpertises();
   return (
     <section className="section bg-surface" aria-labelledby="expertises-title">
       <div className="container-page">

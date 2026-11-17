@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import ContactCTA from "@/components/home/ContactCTA";
+import OurValues from "@/components/site/OurValues";
 import { images } from "@/data/site";
 import { getTeam } from "@/lib/content-fns";
 
@@ -123,6 +124,8 @@ function TeamPage() {
           </Reveal>
         </div>
       </section>
+
+      <OurValues />
 
       <ContactCTA />
     </>

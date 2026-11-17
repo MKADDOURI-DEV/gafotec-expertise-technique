@@ -3,7 +3,8 @@ import PageHero from "@/components/site/PageHero";
 import Reveal from "@/components/site/Reveal";
 import ServiceSection from "@/components/expertise/ServiceSection";
 import ContactCTA from "@/components/home/ContactCTA";
-import { images, services } from "@/data/site";
+import { images } from "@/data/site";
+import { useExpertises } from "@/components/content/ExpertisesProvider";
 
 export const Route = createFileRoute("/_site/nos-expertises")({
   head: () => ({
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_site/nos-expertises")({
 });
 
 function ExpertisePage() {
+  const services = useExpertises();
   return (
     <>
       <PageHero contentKey="expertises" />
