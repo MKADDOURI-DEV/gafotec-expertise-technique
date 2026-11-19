@@ -48,6 +48,7 @@ export const navLinks = [
   { label: "À propos", to: "/a-propos" },
   { label: "Nos expertises", to: "/nos-expertises" },
   { label: "Nos réalisations", to: "/nos-realisations" },
+  { label: "Nos clients", to: "/nos-clients" },
   { label: "Photovoltaïque", to: "/energies-photovoltaiques" },
   { label: "Notre équipe", to: "/notre-equipe" },
   { label: "Contact", to: "/contact" },

@@ -9,6 +9,7 @@ const PAGES = [
   { path: "/a-propos", priority: "0.8", changefreq: "yearly" },
   { path: "/nos-expertises", priority: "0.9", changefreq: "monthly" },
   { path: "/nos-realisations", priority: "0.9", changefreq: "monthly" },
+  { path: "/nos-clients", priority: "0.7", changefreq: "monthly" },
   { path: "/energies-photovoltaiques", priority: "0.8", changefreq: "monthly" },
   { path: "/notre-equipe", priority: "0.6", changefreq: "yearly" },
   { path: "/contact", priority: "0.8", changefreq: "yearly" },

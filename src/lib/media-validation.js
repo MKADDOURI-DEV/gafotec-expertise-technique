@@ -84,3 +84,22 @@ export function validateVideoCodec({ isMp4, h264, other }) {
   if (!h264 && other) return `Codec vidéo ${other} détecté : exportez la vidéo en H.264 (MP4) pour qu’elle se lise sur tous les navigateurs et téléphones.`;
   return null;
 }
+
+// ---- Client logos (« Nos clients ») -------------------------------------------------------------------------------
+// PNG / JPEG / WebP only: SVG is refused on purpose (it can carry scripts). 2 MB is plenty for a logo.
+
+export const MAX_LOGO_BYTES = 2 * 1024 * 1024;
+const LOGO_TYPES = { "image/png": [".png"], "image/jpeg": [".jpg", ".jpeg"], "image/webp": [".webp"] };
+
+export function validateLogoFile(file) {
+  if (!file) return "Aucun fichier sélectionné.";
+  const extensions = LOGO_TYPES[file.type];
+  if (!extensions || !extensions.some((ext) => hasExt(file.name, ext))) {
+    return "Format non autorisé : le logo doit être une image PNG, JPG ou WebP.";
+  }
+  if (!(file.size > 0)) return "Le fichier est vide.";
+  if (file.size > MAX_LOGO_BYTES) {
+    return `Logo trop lourd (${formatBytes(file.size)}). Le maximum est ${formatBytes(MAX_LOGO_BYTES)} : réduisez l’image avant de l’importer.`;
+  }
+  return null;
+}

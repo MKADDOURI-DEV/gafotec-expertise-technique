@@ -45,36 +45,41 @@ function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-surface">
+    <div className="min-h-screen overflow-x-clip bg-surface">
       <header className="border-b border-border bg-background">
-        <div className="container-page flex h-16 items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <Logo />
-            <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground sm:inline">
+        <div className="container-page flex h-16 items-center justify-between gap-2 sm:gap-4">
+          <div className="flex min-w-0 items-center gap-4">
+            {/* The admin header ignores the public logo size setting so a large logo can never push the page sideways. */}
+            <div className="min-w-0 [&_img]:!h-9 [&_img]:!w-auto [&_img]:max-w-full sm:[&_img]:!h-11">
+              <Logo />
+            </div>
+            <span className="hidden font-mono text-[9.5px] uppercase tracking-[0.22em] text-muted-foreground md:inline">
               Administration
             </span>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-3">
             <Link
               to="/"
-              className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-primary hover:text-brand-deep"
+              aria-label="Voir le site"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-primary hover:text-brand-deep"
             >
-              Voir le site
-              <ArrowUpRight className="h-3 w-3" strokeWidth={1.75} />
+              <span className="hidden sm:inline">Voir le site</span>
+              <ArrowUpRight className="h-4 w-4 sm:h-3 sm:w-3" strokeWidth={1.75} />
             </Link>
             <button
               type="button"
               onClick={() => logout()}
-              className="inline-flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
+              aria-label="Déconnexion"
+              className="inline-flex min-h-11 min-w-11 items-center justify-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.16em] text-muted-foreground hover:text-foreground"
             >
-              <LogOut className="h-3.5 w-3.5" strokeWidth={1.75} />
+              <LogOut className="h-4 w-4 sm:h-3.5 sm:w-3.5" strokeWidth={1.75} />
               <span className="hidden sm:inline">Déconnexion</span>
             </button>
           </div>
         </div>
       </header>
 
-      <div className="container-page grid gap-8 py-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-12 lg:py-10">
+      <div className="container-page grid grid-cols-[minmax(0,1fr)] gap-6 py-6 sm:gap-8 sm:py-8 lg:grid-cols-[210px_minmax(0,1fr)] lg:gap-12 lg:py-10">
         <AdminNav />
         <div className="min-w-0">
           <Outlet />

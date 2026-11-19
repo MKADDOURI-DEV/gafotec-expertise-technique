@@ -77,17 +77,17 @@ function RequestsAdmin() {
                 <p className="mt-4 whitespace-pre-line text-[13.5px] leading-relaxed text-foreground">{item.message}</p>
 
                 <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px]">
-                  <a className="inline-flex items-center gap-1.5 text-primary hover:underline" href={`mailto:${item.email}`}>
+                  <a className="inline-flex min-h-11 min-w-0 items-center gap-1.5 break-all text-primary hover:underline sm:min-h-0" href={`mailto:${item.email}`}>
                     <Mail className="h-3.5 w-3.5" strokeWidth={1.75} />
                     {item.email}
                   </a>
-                  <a className="inline-flex items-center gap-1.5 text-primary hover:underline" href={`tel:${item.phone}`}>
+                  <a className="inline-flex min-h-11 items-center gap-1.5 text-primary hover:underline sm:min-h-0" href={`tel:${item.phone}`}>
                     <Phone className="h-3.5 w-3.5" strokeWidth={1.75} />
                     {item.phone}
                   </a>
                 </div>
 
-                <div className="mt-4 flex items-center gap-1 border-t border-border pt-3">
+                <div className="mt-4 flex flex-wrap items-center gap-1 border-t border-border pt-3">
                   <Button
                     type="button"
                     variant="ghost"
