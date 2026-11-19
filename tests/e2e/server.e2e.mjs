@@ -68,7 +68,7 @@ const check = (label, ok, extra = "") => (ok ? pass++ : fail++, console.log(`${o
 const KEY = /key:\s*"([^"]+)"/.exec(readFileSync(new URL("../../src/content/registry.js", import.meta.url), "utf8"))[1]; // a real, editable content key
 const project = { title: "Projet E2E", slug: "projet-e2e", year: 2025, category: "Industrie", location: "Fès", status: "En cours", image: "https://x/y.jpg", summary: "s", description: "d", scope: ["CVC"], featured: true, display_order: 3 };
 
-check("all 21 server functions found in the build", Object.keys(ids).length >= 21, Object.keys(ids).join(","));
+check("all 25 server functions found in the build", Object.keys(ids).length >= 25, Object.keys(ids).join(","));
 
 // ---- authentication / authorization on every admin function
 const adminCalls = [
@@ -76,6 +76,7 @@ const adminCalls = [
   ["saveProject", project], ["deleteProject", { id: USER }],
   ["saveTeamMember", { name: "Nom", role: "Role", group: "Direction" }], ["deleteTeamMember", { id: USER }],
   ["createMedia", { kind: "image", url: "https://x/y.jpg" }], ["deleteMedia", { id: USER }],
+  ["saveClient", { name: "Client test" }], ["deleteClient", { id: USER }],
   ["saveExpertise", { title: "Expertise test" }], ["deleteExpertise", { id: USER }], ["reorderExpertiseList", { ids: [USER] }],
   ["inviteUser", { email: "new@x.io", role: "admin" }],
   ["setContactRequestStatus", { id: USER, status: "traite" }], ["deleteContactRequest", { id: USER }],
@@ -90,7 +91,7 @@ for (const [name, data] of adminCalls) {
   const nonAdmin = await call(name, data, tokens.user);
   check(`${name}: signed-in non-admin -> 403`, nonAdmin.status === 403, nonAdmin.status);
 }
-for (const name of ["listMedia", "getAdminOverview", "listContactRequests"]) {
+for (const name of ["listMedia", "getAdminOverview", "listContactRequests", "listClients"]) {
   check(`${name}: anonymous -> 401`, (await call(name, undefined, undefined, "GET")).status === 401);
   check(`${name}: non-admin -> 403`, (await call(name, undefined, tokens.user, "GET")).status === 403);
 }
@@ -198,21 +199,91 @@ fake.db.contact_requests.length = 0;
 check("admin: delete expertise", (await call("deleteExpertise", { id: eB }, A)).status === 200 && fake.db.site_expertises.length === 1);
 check("admin: delete the last one -> empty list, NOT the built-in one", (await call("deleteExpertise", { id: eA }, A)).status === 200 && (await call("getExpertises", undefined, undefined, "GET")).body?.items.length === 0);
 
+// ---- Presentation files (ex « Our Values ») now live on « Nos clients », not on « Notre équipe »
 html = await page("/notre-equipe");
-check("Our Values: section is shown after the team section", html.includes("Our Values") && html.indexOf("Our Values") > html.indexOf("Comment nous travaillons"), html.length);
-check("Our Values: NO player and NO download button while nothing is imported", !html.includes("<video") && !html.includes("Télécharger la présentation"));
+check("team page: the presentation section was removed", !html.includes("Our Values") && !html.includes("Télécharger la présentation") && !html.includes("<video") && html.includes("Comment nous travaillons"), html.length);
+html = await page("/nos-clients");
+check("clients page: while nothing is imported there is NO player, NO PDF button and no empty « Our Values » block", !html.includes("<video") && !html.includes("Télécharger la présentation") && !html.includes("Our Values"), html.length);
 r = await call("saveSiteContent", { updates: [
   { key: "values.video_url", value: "https://x.supabase.co/storage/v1/object/public/media/values/video/v.mp4" },
   { key: "values.pdf_url", value: "https://x.supabase.co/storage/v1/object/public/media/values/pdf/p.pdf" },
   { key: "values.pdf_name", value: "presentation.pdf" },
   { key: "values.button_label", value: "Télécharger la présentation de GAFOTEC" },
 ] }, A);
-check("admin: managed Our Values keys are accepted", r.status === 200 && r.body.saved === 4, JSON.stringify(r));
+check("admin: managed presentation keys (values.*) are still accepted", r.status === 200 && r.body.saved === 4, JSON.stringify(r));
+html = await page("/nos-clients");
+check("clients page: player + download button appear once files exist", html.includes("<video") && html.includes("v.mp4") && html.includes("download=presentation.pdf") && html.includes("Télécharger la présentation de GAFOTEC") && html.includes("Our Values"), html.length);
 html = await page("/notre-equipe");
-check("Our Values: player + download button appear once files exist", html.includes("<video") && html.includes("v.mp4") && html.includes("download=presentation.pdf") && html.includes("Télécharger la présentation de GAFOTEC"), html.length);
+check("team page: still no presentation section even when the files exist", !html.includes("<video") && !html.includes("download=presentation.pdf"));
 await call("saveSiteContent", { updates: ["values.video_url", "values.pdf_url"].map((key) => ({ key, value: "" })) }, A);
-html = await page("/notre-equipe");
-check("Our Values: deleting the files removes the player and the button", !html.includes("<video") && !html.includes("download=presentation.pdf"));
+html = await page("/nos-clients");
+check("clients page: deleting the files removes the player, the button and the section", !html.includes("<video") && !html.includes("download=presentation.pdf") && !html.includes("Our Values"));
+await call("saveSiteContent", { updates: ["values.pdf_name"].map((key) => ({ key, value: "" })) }, A);
+
+// ---- Home page background video
+html = await page("/");
+check("home: no video block while none is imported (static image only)", !html.includes("gh-media--video") && !html.includes("<video"), html.length);
+r = await call("saveSiteContent", { updates: [
+  { key: "home.hero.video_url", value: "https://x.supabase.co/storage/v1/object/public/media/home/hero/bg.mp4" },
+  { key: "home.hero.video_path", value: "home/hero/bg.mp4" },
+  { key: "home.hero.video_name", value: "bg.mp4" },
+  { key: "home.hero.video_size", value: "1234" },
+  { key: "home.hero.video_duration", value: "12" },
+] }, A);
+check("admin: home hero video keys are accepted", r.status === 200 && r.body.saved === 5, JSON.stringify(r));
+html = await page("/");
+check("home: hero switches to video mode (overlay class) but the <video> is only mounted in the browser (SSR keeps the image: poster/fallback)", html.includes("gh-media--video") && !html.includes("<video"), html.length);
+check("home: hero text and both buttons are still rendered above the video", html.includes("Découvrir nos expertises") && html.includes("Demander un devis"));
+await call("saveSiteContent", { updates: ["home.hero.video_url", "home.hero.video_path", "home.hero.video_name", "home.hero.video_size", "home.hero.video_duration"].map((key) => ({ key, value: "" })) }, A);
+html = await page("/");
+check("home: removing the video restores the plain image hero", !html.includes("gh-media--video"));
+check("navigation: « Nos clients » link is in the header and the sitemap", html.includes("/nos-clients") && (await (await fetch(`http://127.0.0.1:${APP}/sitemap.xml`)).text()).includes("/nos-clients"));
+
+// ---- Clients
+r = await call("getClients", undefined, undefined, "GET");
+check("public: clients -> empty + available:false while the SQL is not applied", r.status === 200 && r.body?.available === false && r.body.items.length === 0, JSON.stringify(r));
+html = await page("/nos-clients");
+check("page: /nos-clients shows the clean empty state (no crash, no invented client)", html.includes("La liste de nos clients arrive bientôt") && html.includes("Nous contacter"), html.length);
+r = await call("listClients", undefined, A, "GET");
+check("admin: list clients -> available:false until the SQL is applied", r.status === 200 && r.body?.available === false, JSON.stringify(r));
+r = await call("saveClient", { name: "Client Alpha" }, A);
+check("admin: client edit refused with a clear 409 until the SQL is applied", r.status === 409, r.status);
+
+fake.db.site_clients = []; // = the SQL was applied
+const LOGO = `http://127.0.0.1:${FAKE}/storage/v1/object/public/media/clients/uuid-alpha.png`; // same origin as SUPABASE_URL of the server
+r = await call("saveClient", { name: "Client Alpha", sector: "Hôtellerie", description: "Un client de test.", website: "https://alpha.test", logo_url: LOGO, logo_path: "clients/uuid-alpha.png" }, A);
+const cA = r.body?.id;
+check("admin: create client (hidden by default, order assigned last)", r.status === 200 && cA && fake.db.site_clients[0].published === false && fake.db.site_clients[0].display_order === 0, JSON.stringify(r));
+r = await call("getClients", undefined, undefined, "GET");
+check("public: a hidden client is NOT returned", r.status === 200 && r.body.available === true && r.body.items.length === 0, JSON.stringify(r));
+html = await page("/nos-clients");
+check("page: a hidden client is NOT displayed", !html.includes("Client Alpha") && html.includes("La liste de nos clients arrive bientôt"));
+r = await call("saveClient", { id: cA, name: "Client Alpha", sector: "Hôtellerie", description: "Un client de test.", website: "https://alpha.test", logo_url: LOGO, logo_path: "clients/uuid-alpha.png", published: true }, A);
+check("admin: publish client", r.status === 200 && fake.db.site_clients[0].published === true, JSON.stringify(r));
+r = await call("saveClient", { name: "Client Bravo", sector: "Industrie", published: true }, A);
+const cB = r.body?.id;
+check("admin: second client goes last", r.status === 200 && fake.db.site_clients[1].display_order === 1, JSON.stringify(r));
+r = await call("getClients", undefined, undefined, "GET");
+check("public: published clients in display order, WITHOUT storage path nor published flag", r.body.items.map((c) => c.name).join() === "Client Alpha,Client Bravo" && r.body.items.every((c) => !("logo_path" in c) && !("published" in c)), JSON.stringify(r).slice(0, 300));
+html = await page("/nos-clients");
+check("page: published clients are displayed with logo, sector and website (sector filter shown for 2 sectors)", html.includes("Client Alpha") && html.includes("uuid-alpha.png") && html.includes("alpha.test") && html.includes("Client Bravo") && html.includes("Filtrer par secteur") && !html.includes("La liste de nos clients arrive bientôt"), html.length);
+r = await call("saveClient", { id: cB, name: "Client Bravo", sector: "Industrie", published: true, display_order: 0 }, A);
+r = await call("saveClient", { id: cA, name: "Client Alpha", sector: "Hôtellerie", published: true, display_order: 5, logo_url: LOGO, logo_path: "clients/uuid-alpha.png" }, A);
+r = await call("getClients", undefined, undefined, "GET");
+check("admin: changing the display order changes the public order", r.body.items.map((c) => c.name).join() === "Client Bravo,Client Alpha", JSON.stringify(r).slice(0, 200));
+r = await call("saveClient", { id: cA, name: "Client Alpha", published: false, logo_url: "", logo_path: "" }, A);
+check("admin: hide client + remove its logo", r.status === 200 && fake.db.site_clients.find((c) => c.id === cA).logo_url === "" && (await call("getClients", undefined, undefined, "GET")).body.items.length === 1);
+for (const [label, bad] of [["javascript: website", { website: "javascript:alert(1)" }], ["ftp website", { website: "ftp://x.test" }], ["logo from another host", { logo_url: "https://evil.test/storage/v1/object/public/media/clients/l.png", logo_path: "clients/l.png" }], ["logo url without path", { logo_url: LOGO }], ["logo url / path mismatch", { logo_url: LOGO, logo_path: "clients/other.png" }], ["logo path outside clients/", { logo_path: "../secrets/key.png" }], ["one-letter name", { name: "A" }], ["order out of range", { display_order: 100000 }]]) {
+  const before = JSON.stringify(fake.db.site_clients);
+  r = await call("saveClient", { name: "Client Test", ...bad }, A);
+  check(`admin: invalid client refused (${label}) -> 400, nothing written`, r.status === 400 && JSON.stringify(fake.db.site_clients) === before, r.status);
+}
+r = await call("saveClient", { id: "00000000-0000-4000-8000-00000000dead", name: "Fantôme" }, A);
+check("admin: update of an unknown client -> 404", r.status === 404, r.status);
+r = await call("listClients", undefined, A, "GET");
+check("admin: list clients returns hidden ones too, with the logo path", r.status === 200 && r.body.items.length === 2 && r.body.items.some((c) => c.published === false), JSON.stringify(r).slice(0, 250));
+check("admin: delete client", (await call("deleteClient", { id: cA }, A)).status === 200 && fake.db.site_clients.length === 1);
+check("admin: delete the last client -> back to the clean empty state", (await call("deleteClient", { id: cB }, A)).status === 200 && (await page("/nos-clients")).includes("La liste de nos clients arrive bientôt"));
 
 r = await call("saveSiteContent", { updates: [{ key: "logo.url", value: "https://x.supabase.co/storage/v1/object/public/media/logo/new-logo.png" }, { key: "logo.height", value: "60" }, { key: "logo.width", value: "" }] }, A);
 check("admin: logo keys are accepted", r.status === 200 && r.body.saved === 3, JSON.stringify(r));

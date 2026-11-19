@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth-middleware";
 import { contentKeys } from "@/content/registry";
 import {
   deleteRow,
+  readClients,
   readContent,
   readExpertises,
   readMedia,
@@ -13,6 +14,7 @@ import {
   readRequests,
   readTeam,
   reorderExpertises,
+  writeClient,
   writeContent,
   writeExpertise,
   writeMedia,
@@ -20,8 +22,9 @@ import {
   writeRequestStatus,
   writeTeamMember,
 } from "@/lib/data-api";
-import { getAdminDb } from "@/lib/supabase-admin";
+import { getAdminDb, readServerEnv } from "@/lib/supabase-admin";
 import { normalizeExpertises, slugify } from "@/lib/expertises";
+import { isAllowedLogoUrl, isHttpUrl, toPublicClient } from "@/lib/clients";
 import { services as staticServices } from "@/data/site";
 
 // Public reads (the site itself) use no sign-in. Every other function: requireUser (401) then assertAdmin (403),
@@ -157,6 +160,84 @@ export const reorderExpertiseList = createServerFn({ method: "POST" })
     const db = await getAdminDb();
     await requireExpertiseTable(db);
     await reorderExpertises(db, data.ids);
+    return { ok: true };
+  });
+
+// ---- Clients (« Nos clients ») ---------------------------------------------------------------------------------
+
+// Public read: PUBLISHED clients only, without storage path. `available: false` = the table does not exist yet
+// (the SQL was not applied): the site shows its clean empty state.
+export const getClients = createServerFn({ method: "GET" }).handler(async () => {
+  const rows = await readClients(await getAdminDb(), { publishedOnly: true });
+  return { available: rows !== null, items: (rows ?? []).filter((row) => row.published).map(toPublicClient) };
+});
+
+// Admin read: every client (published or hidden), with the logo storage path.
+export const listClients = createServerFn({ method: "GET" })
+  .middleware([requireUser])
+  .handler(async ({ context }) => {
+    assertAdmin(context.user);
+    const rows = await readClients(await getAdminDb());
+    return { available: rows !== null, items: rows ?? [] };
+  });
+
+const clientSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  sector: z.string().trim().max(80).optional().default(""),
+  description: z.string().trim().max(400).optional().default(""),
+  website: z
+    .string()
+    .trim()
+    .max(300)
+    .optional()
+    .default("")
+    .refine((value) => value === "" || isHttpUrl(value), "Adresse du site invalide (http:// ou https://)"),
+  logo_url: z
+    .string()
+    .trim()
+    .max(700)
+    .optional()
+    .default(""), // checked in the handler against OUR Supabase project (isAllowedLogoUrl)
+  logo_path: z
+    .string()
+    .trim()
+    .max(300)
+    .optional()
+    .default("")
+    .refine((value) => value === "" || /^clients\/[\w.-]+$/.test(value), "Chemin de logo invalide"),
+  display_order: z.coerce.number().int().min(0).max(9999).optional(),
+  published: z.boolean().optional().default(false),
+});
+
+async function requireClientTable(db) {
+  if ((await readClients(db)) === null) {
+    const error = new Error("La table des clients n’existe pas encore : le SQL doit d’abord être appliqué sur Supabase.");
+    error.status = 409;
+    throw error;
+  }
+}
+
+export const saveClient = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(clientSchema.extend({ id: id.optional() }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    if (!isAllowedLogoUrl(data.logo_url, readServerEnv().url, data.logo_path)) {
+      throw Object.assign(new Error("Logo non autorisé : il doit provenir du stockage Supabase de ce projet (dossier clients)."), { status: 400 });
+    }
+    const db = await getAdminDb();
+    await requireClientTable(db);
+    return { ok: true, id: await writeClient(db, data) };
+  });
+
+export const deleteClient = createServerFn({ method: "POST" })
+  .middleware([requireUser])
+  .validator(z.object({ id }))
+  .handler(async ({ data, context }) => {
+    assertAdmin(context.user);
+    const db = await getAdminDb();
+    await requireClientTable(db);
+    await deleteRow(db, "site_clients", data.id);
     return { ok: true };
   });
 

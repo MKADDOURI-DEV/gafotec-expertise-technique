@@ -218,6 +218,38 @@ export const contentGroups = [
     ],
   },
   {
+    id: "page-clients",
+    label: "Page Nos clients — textes",
+    hint: "Les clients eux-mêmes (logos, secteurs, ordre) se gèrent dans Administration › Nos clients.",
+    fields: [
+      { key: "clients.hero.eyebrow", label: "Sur-titre", type: "text", default: "Nos clients" },
+      {
+        key: "clients.hero.title",
+        label: "Titre",
+        type: "textarea",
+        wide: true,
+        default: "Des établissements et des entreprises qui nous font confiance.",
+      },
+      {
+        key: "clients.hero.description",
+        label: "Description",
+        type: "textarea",
+        wide: true,
+        default: "GAFOTEC accompagne des acteurs de l’hôtellerie, de l’industrie et de l’enseignement dans leurs installations techniques.",
+      },
+      { key: "clients.hero.image", label: "Image de fond", type: "image", wide: true, default: images.chantier },
+      { key: "clients.list.title", label: "Titre de la liste des clients", type: "text", default: "Ils nous font confiance" },
+      { key: "clients.empty.title", label: "Message si aucun client (titre)", type: "text", default: "La liste de nos clients arrive bientôt" },
+      {
+        key: "clients.empty.text",
+        label: "Message si aucun client (texte)",
+        type: "textarea",
+        wide: true,
+        default: "Nous publierons ici les entreprises et établissements avec lesquels GAFOTEC a travaillé.",
+      },
+    ],
+  },
+  {
     id: "page-contact",
     label: "Page Contact — en-tête",
     fields: [
@@ -245,7 +277,7 @@ export const contentGroups = [
 export const contentFields = contentGroups.flatMap((group) => group.fields);
 
 /**
- * Keys managed by dedicated admin pages (logo, "Our Values"), not by the generic « Contenu du site » form.
+ * Keys managed by dedicated admin pages (logo, home video, presentation files), not by the generic « Contenu du site » form.
  * They live in the same SiteContent table; `default` is what the public site shows until the owner saves something.
  */
 export const managedContent = {
@@ -253,7 +285,14 @@ export const managedContent = {
   "logo.url": "",
   "logo.width": "",
   "logo.height": "",
-  // « Our Values » section (page Notre équipe)
+  // Home page hero background video (Supabase Storage). Empty = static image only.
+  "home.hero.video_url": "",
+  "home.hero.video_path": "",
+  "home.hero.video_name": "",
+  "home.hero.video_size": "",
+  "home.hero.video_duration": "",
+  // Presentation section (video + PDF), now shown on the « Nos clients » page. The `values.*` keys are kept as they are
+  // so the files already imported (and their Supabase Storage references) are preserved untouched.
   "values.title": "Our Values",
   "values.intro": "Découvrez GAFOTEC, ses engagements et sa façon de travailler.",
   "values.button_label": "Télécharger la présentation de GAFOTEC",

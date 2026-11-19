@@ -109,7 +109,7 @@ export default function ProjectEditor({ project, open, onOpenChange, onSaved }) 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-3xl overflow-y-auto">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{project ? "Modifier la réalisation" : "Nouvelle réalisation"}</DialogTitle>
         </DialogHeader>

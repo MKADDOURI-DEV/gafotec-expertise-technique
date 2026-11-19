@@ -60,7 +60,7 @@ export default function TeamMemberEditor({ member, open, onOpenChange, onSaved }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] max-w-xl overflow-y-auto">
+      <DialogContent className="max-h-[calc(100dvh-1rem)] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{member ? "Modifier le collaborateur" : "Nouveau collaborateur"}</DialogTitle>
         </DialogHeader>

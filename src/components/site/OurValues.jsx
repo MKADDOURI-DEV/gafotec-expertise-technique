@@ -9,13 +9,18 @@ export const downloadHref = (url, name) => {
   return `${url}${url.includes("?") ? "&" : "?"}download=${encodeURIComponent(filename)}`;
 };
 
-/** « Our Values »: title + text always; the video player and the download button only exist once a file was imported. */
+/**
+ * Presentation section (now on the « Nos clients » page): rendered ONLY when a video and/or a PDF was imported, so there is
+ * never an empty player, a button without file, or a heading without content. Keys stay `values.*` (existing files preserved).
+ */
 export default function OurValues() {
   const { t } = useContent();
   const videoUrl = t("values.video_url");
   const pdfUrl = t("values.pdf_url");
   const title = t("values.title");
   const intro = t("values.intro");
+
+  if (!videoUrl && !pdfUrl) return null;
 
   return (
     <section className="section border-t border-border bg-surface" aria-labelledby="our-values-title">

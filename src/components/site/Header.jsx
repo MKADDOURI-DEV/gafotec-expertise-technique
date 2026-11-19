@@ -45,7 +45,7 @@ export default function Header() {
         <div className="container-page flex h-[68px] items-center justify-between gap-6 lg:h-[80px]">
           <Logo inverted={overlay} />
 
-          <nav aria-label="Navigation principale" className="hidden items-center gap-7 xl:flex">
+          <nav aria-label="Navigation principale" className="hidden items-center gap-5 2xl:gap-7 xl:flex">
             {navLinks.slice(1, 7).map((link) => {
               const active = pathname === link.to;
               return (
@@ -112,7 +112,7 @@ export default function Header() {
       {/* Mobile menu */}
       <div
         className={cn(
-          "fixed inset-0 z-[60] bg-brand-deep text-white transition-all duration-500 xl:hidden",
+          "fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-brand-deep pb-8 text-white transition-all duration-500 xl:hidden",
           open ? "visible opacity-100" : "invisible opacity-0",
         )}
         aria-hidden={!open}

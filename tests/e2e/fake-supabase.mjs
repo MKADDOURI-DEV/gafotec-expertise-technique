@@ -20,8 +20,10 @@ const DEFAULTS = {
   profiles: () => ({ role: "user" }),
   // Optional table: absent (PostgREST 404 PGRST205) until a test "applies the SQL" with `fake.db.site_expertises = []`.
   site_expertises: () => ({ short: "", excerpt: "", description: "", interventions: [], expertise: [], image: "" }),
+  // Optional table too: absent until a test sets `fake.db.site_clients = []` (= the SQL was applied).
+  site_clients: () => ({ sector: "", description: "", website: "", logo_url: "", logo_path: "", display_order: 0, published: false }),
 };
-const OPTIONAL_TABLES = new Set(["site_expertises"]);
+const OPTIONAL_TABLES = new Set(["site_expertises", "site_clients"]);
 
 export function startFakeSupabase(port) {
   const db = Object.fromEntries(Object.keys(DEFAULTS).filter((t) => !OPTIONAL_TABLES.has(t)).map((t) => [t, []]));

@@ -23,12 +23,24 @@ import { removeStoredFile, uploadManagedFile, verifyPublicFile } from "@/lib/sto
 const FIELDS = ["url", "path", "name", "size", "duration"];
 
 /**
- * Import / preview / replace / delete one file of the « Our Values » section (video or PDF).
+ * Import / preview / replace / delete one managed file (video or PDF) stored under `<prefix>.<kind>_*` in the site content.
+ * Defaults = the presentation files (`values.*`, now shown on « Nos clients »); the home page video uses prefix « home.hero ».
  * Replacement is safe: new file uploaded → verified → saved in the database → only then is the old file deleted.
  */
-export default function ManagedFileCard({ kind, content, onChanged }) {
+export default function ManagedFileCard({
+  kind,
+  content,
+  onChanged,
+  prefix = "values",
+  folder,
+  title,
+  emptyText,
+  hint,
+  recommendedBytes = RECOMMENDED_VIDEO_BYTES,
+}) {
   const isVideo = kind === "video";
-  const key = (field) => `values.${kind}_${field}`;
+  const key = (field) => `${prefix}.${kind}_${field}`;
+  const storageFolder = folder ?? `${prefix}/${kind}`;
   const current = {
     url: content[key("url")] || "",
     path: content[key("path")] || "",
@@ -87,7 +99,7 @@ export default function ManagedFileCard({ kind, content, onChanged }) {
     try {
       setProgress(0);
       setPhase("Envoi du fichier…");
-      const { path, url } = await uploadManagedFile(file, { folder: `values/${kind}`, onProgress: setProgress, signal: controller.signal });
+      const { path, url } = await uploadManagedFile(file, { folder: storageFolder, onProgress: setProgress, signal: controller.signal });
       setPhase("Vérification du fichier envoyé…");
       await verifyPublicFile(url, file.size);
       setPhase("Enregistrement…");
@@ -134,16 +146,17 @@ export default function ManagedFileCard({ kind, content, onChanged }) {
 
   const Icon = isVideo ? Video : FileText;
   const limitText = isVideo
-    ? `MP4 (H.264 + AAC), ${MAX_VIDEO_SECONDS / 60} min maximum, ${formatBytes(MAX_VIDEO_BYTES)} maximum (limite Supabase) — ${formatBytes(RECOMMENDED_VIDEO_BYTES)} recommandés.`
+    ? `MP4 (H.264 + AAC), ${MAX_VIDEO_SECONDS / 60} min maximum, ${formatBytes(MAX_VIDEO_BYTES)} maximum (limite Supabase) — ${formatBytes(recommendedBytes)} recommandés.`
     : `PDF, ${formatBytes(MAX_PDF_BYTES)} maximum.`;
 
   return (
-    <section className="border border-border bg-background p-5">
+    <section className="min-w-0 border border-border bg-background p-4 sm:p-5">
       <div className="flex items-center gap-2">
-        <Icon className="h-4 w-4 text-primary" strokeWidth={1.75} />
-        <h2 className="font-heading text-[14px] font-semibold text-foreground">{isVideo ? "Vidéo de présentation" : "Document PDF de présentation"}</h2>
+        <Icon className="h-4 w-4 shrink-0 text-primary" strokeWidth={1.75} />
+        <h2 className="font-heading text-[14px] font-semibold text-foreground">{title ?? (isVideo ? "Vidéo de présentation" : "Document PDF de présentation")}</h2>
       </div>
       <p className="mt-1 text-[12px] text-muted-foreground">{limitText}</p>
+      {hint ? <p className="mt-1 text-[12px] text-muted-foreground">{hint}</p> : null}
 
       {current.url ? (
         <div className="mt-4 space-y-3">
@@ -165,7 +178,7 @@ export default function ManagedFileCard({ kind, content, onChanged }) {
         </div>
       ) : (
         <p className="mt-4 border border-dashed border-border p-4 text-[12.5px] text-muted-foreground">
-          {isVideo ? "Aucune vidéo importée : le lecteur n’est pas affiché sur le site." : "Aucun document importé : le bouton de téléchargement n’est pas affiché sur le site."}
+          {emptyText ?? (isVideo ? "Aucune vidéo importée : le lecteur n’est pas affiché sur le site." : "Aucun document importé : le bouton de téléchargement n’est pas affiché sur le site.")}
         </p>
       )}
 
@@ -211,7 +224,7 @@ export default function ManagedFileCard({ kind, content, onChanged }) {
         </p>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-4 flex flex-wrap gap-2 [&>button]:max-sm:flex-1">
         <Button type="button" variant="outline" size="sm" disabled={checking || working} onClick={() => inputRef.current?.click()}>
           {checking ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Upload className="mr-1.5 h-3.5 w-3.5" strokeWidth={1.75} />}
           {checking ? "Vérification…" : current.url ? "Remplacer le fichier" : isVideo ? "Importer une vidéo" : "Importer un PDF"}
@@ -222,7 +235,7 @@ export default function ManagedFileCard({ kind, content, onChanged }) {
           </Button>
         ) : null}
         {confirmingDelete ? (
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-wrap items-center gap-1.5">
             <Button type="button" variant="destructive" size="sm" disabled={working} onClick={handleDelete}>
               {working ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Confirmer la suppression"}
             </Button>

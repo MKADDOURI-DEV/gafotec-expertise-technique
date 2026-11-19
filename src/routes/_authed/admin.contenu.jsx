@@ -69,15 +69,15 @@ function ContentAdmin() {
         restent celles du site d’origine.
       </p>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-[210px_minmax(0,1fr)]">
-        <ul className="flex gap-1 overflow-x-auto pb-2 lg:flex-col lg:overflow-visible lg:pb-0">
+      <div className="mt-8 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[210px_minmax(0,1fr)]">
+        <ul className="-mx-5 flex min-w-0 snap-x gap-1 overflow-x-auto overscroll-x-contain px-5 pb-2 sm:-mx-8 sm:px-8 lg:mx-0 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0">
           {contentGroups.map((item) => (
-            <li key={item.id} className="shrink-0 lg:shrink">
+            <li key={item.id} className="shrink-0 snap-start lg:shrink">
               <button
                 type="button"
                 onClick={() => setGroupId(item.id)}
                 className={cn(
-                  "whitespace-nowrap px-3 py-2.5 text-left text-[12.5px] transition-colors lg:w-full",
+                  "min-h-11 whitespace-nowrap px-3 py-2.5 text-left text-[12.5px] transition-colors lg:min-h-0 lg:w-full",
                   item.id === groupId
                     ? "bg-primary text-primary-foreground"
                     : "text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -89,7 +89,7 @@ function ContentAdmin() {
           ))}
         </ul>
 
-        <div className="border border-border bg-background p-5 lg:p-7">
+        <div className="min-w-0 border border-border bg-background p-4 sm:p-5 lg:p-7">
           {group.hint && (
             <p className="mb-6 border-l-2 border-border pl-3 text-[12px] leading-relaxed text-muted-foreground">
               {group.hint}

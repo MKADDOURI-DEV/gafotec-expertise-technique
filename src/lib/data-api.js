@@ -2,6 +2,7 @@
 // so it only ever runs on the server, after requireUser + assertAdmin where the data is not public.
 import { notFound } from "./auth-core.js";
 import { MISSING_TABLE_CODES, normalizeExpertises } from "./expertises.js";
+import { normalizeClient, sortClients } from "./clients.js";
 
 const MESSAGES = {
   "23505": "Cet identifiant existe déjà.",
@@ -158,4 +159,30 @@ export async function writeExpertise(db, { id, ...values }) {
 /** `ids` = every expertise id in the wanted order. */
 export async function reorderExpertises(db, ids) {
   await Promise.all(ids.map((id, index) => run(db.from("site_expertises").update({ display_order: index }).eq("id", id))));
+}
+
+// ---- Clients (« Nos clients ») ------------------------------------------------------------------------------------
+
+/** Rows of site_clients (sorted), or `null` when the table does not exist yet (the site then shows the empty state). */
+export async function readClients(db, { publishedOnly = false } = {}) {
+  let query = db.from("site_clients").select("*");
+  if (publishedOnly) query = query.eq("published", true);
+  const { data, error } = await query;
+  if (error) {
+    if (MISSING_TABLE_CODES.has(error.code)) return null;
+    throw toError(error);
+  }
+  return sortClients(data.map(normalizeClient));
+}
+
+export async function writeClient(db, { id, ...values }) {
+  if (id) {
+    const { data } = await run(db.from("site_clients").update(values).eq("id", id).select("id"));
+    if (!data.length) throw notFound();
+    return data[0].id;
+  }
+  const { data: last } = await run(db.from("site_clients").select("display_order").order("display_order", { ascending: false }).limit(1));
+  const nextOrder = (last?.[0]?.display_order ?? -1) + 1;
+  const { data } = await run(db.from("site_clients").insert({ ...values, display_order: values.display_order ?? nextOrder }).select("id").single());
+  return data.id;
 }

@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
-const PUBLIC = new Set(["getSiteContent", "getProjects", "getTeam", "getExpertises", "submitQuoteRequest", "getServerInfo"]);
+const PUBLIC = new Set(["getSiteContent", "getProjects", "getTeam", "getExpertises", "getClients", "submitQuoteRequest", "getServerInfo"]);
 
 function serverFns(path) {
   const source = readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
@@ -13,7 +13,7 @@ function serverFns(path) {
 }
 const all = ["lib/content-fns.js", "lib/server-fns.js", "lib/user-fns.js"].flatMap(serverFns);
 
-test("found the server functions", () => assert.ok(all.length >= 17, `only ${all.length} found`));
+test("found the server functions", () => assert.ok(all.length >= 21, `only ${all.length} found`));
 
 for (const fn of all) {
   if (PUBLIC.has(fn.name)) {

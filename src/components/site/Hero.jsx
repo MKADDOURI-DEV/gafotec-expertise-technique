@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight } from "lucide-react";
 import { Image } from "@/components/ui/image";
@@ -20,13 +21,71 @@ function Letters({ text }) {
   );
 }
 
+/**
+ * Background video of the hero. It is only mounted in the browser, after hydration, and never when the visitor asked for
+ * reduced motion / data saving or is on a very slow connection. The hero image stays underneath as poster and fallback:
+ * the video fades in once it really plays, and is dropped for good if it fails to load. It pauses when scrolled out of view.
+ */
+function HeroVideo({ src, poster }) {
+  const ref = useRef(null);
+  const [allowed, setAllowed] = useState(false);
+  const [playing, setPlaying] = useState(false);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => {
+      const connection = navigator.connection;
+      const constrained = connection?.saveData === true || /(^|-)2g$/.test(connection?.effectiveType ?? "");
+      setAllowed(!reduce.matches && !constrained);
+    };
+    update();
+    reduce.addEventListener?.("change", update);
+    return () => reduce.removeEventListener?.("change", update);
+  }, []);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !allowed) return undefined;
+    video.muted = true; // autoplay is only allowed for muted videos (React does not always write the attribute)
+    const start = () => video.play().catch(() => setFailed(true));
+    const observer = new IntersectionObserver(([entry]) => (entry.isIntersecting ? start() : video.pause()), { threshold: 0.1 });
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [allowed, src]);
+
+  if (!src || !allowed || failed) return null;
+
+  return (
+    <video
+      key={src}
+      ref={ref}
+      className={`gh-video${playing ? " gh-video--ready" : ""}`}
+      src={src}
+      poster={poster || undefined}
+      autoPlay
+      muted
+      loop
+      playsInline
+      preload="metadata"
+      disablePictureInPicture
+      tabIndex={-1}
+      aria-hidden="true"
+      onPlaying={() => setPlaying(true)}
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 export default function Hero() {
   const { t } = useContent();
+  const videoUrl = t("home.hero.video_url");
 
   return (
     <section className="gh-section" aria-label="GAFOTEC — Expertise technique">
-      <div className="gh-media" aria-hidden="true">
+      <div className={`gh-media${videoUrl ? " gh-media--video" : ""}`} aria-hidden="true">
         <Image src={t("home.hero.image")} alt="" loading="eager" className="h-full w-full" />
+        <HeroVideo src={videoUrl} poster={t("home.hero.image")} />
       </div>
 
       <div className="gh-content">

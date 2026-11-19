@@ -63,7 +63,7 @@ function LogoAdmin() {
   }, [candidate, removeBg, low]);
 
   const style = useMemo(() => logoStyle({ width, height }), [width, height]);
-  const previewStyle = style ?? { height: "48px", width: "auto" };
+  const previewStyle = { ...(style ?? { height: "48px", width: "auto" }), maxWidth: "100%" };
   const previewSrc = candidate ? processedUrl || candidate.objectUrl : currentUrl;
   const sizeChanged = (width || "") !== (content["logo.width"] || "") || (height || "") !== (content["logo.height"] || "");
   const dirty = Boolean(candidate) || sizeChanged || restoreOriginal;
